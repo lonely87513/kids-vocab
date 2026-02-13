@@ -685,17 +685,65 @@
             const words = vocabulary[currentCategory].slice(0, 4);
             const pairs = [];
             const isEnglish = currentCategory.includes('學英文');
-            words.forEach((w, i) => {
-                // For English, match emoji with English word
-                // For Chinese, match emoji with Chinese character
-                const text = isEnglish ? w.english : w.chinese;
-                pairs.push({ type: 'emoji', content: w.emoji, id: 'e' + i, matchId: 'c' + i });
-                pairs.push({ type: 'text', content: text, id: 'c' + i, matchId: 'e' + i });
-            });
+            
+            if (isEnglish) {
+                // English: match emoji with different emoji (same meaning)
+                // This prevents obvious answers
+                const emojiPairs = {
+                    'one': ['1️⃣', '①'],
+                    'two': ['2️⃣', '②'],
+                    'three': ['3️⃣', '③'],
+                    'four': ['4️⃣', '④'],
+                    'five': ['5️⃣', '⑤'],
+                    'six': ['6️⃣', '⑥'],
+                    'seven': ['7️⃣', '⑦'],
+                    'eight': ['8️⃣', '⑧'],
+                    'nine': ['9️⃣', '⑨'],
+                    'ten': ['🔟', '⑩'],
+                    'zero': ['0️⃣', '𝟎'],
+                    'cat': ['🐱', '😺'],
+                    'dog': ['🐶', '🐕'],
+                    'bird': ['🐦', '🐥'],
+                    'fish': ['🐟', '🐠'],
+                    'rabbit': ['🐰', '🐇'],
+                    'snake': ['🐍', '🐲'],
+                    'turtle': ['🐢', '🐾'],
+                    'spider': ['🕷️', '🕸️'],
+                    'hamster': ['🐹', '🐭'],
+                    'chameleon': ['🦎', '🐸'],
+                    'father': ['👨', '👦'],
+                    'mother': ['👩', '👧'],
+                    'brother': ['👦', '👨'],
+                    'sister': ['👧', '👩'],
+                    'grandfather': ['👴', '🧔'],
+                    'grandmother': ['👵', '👵‍♀️'],
+                    'tall': ['📏', '🗼'],
+                    'short': ['📐', '🏔️'],
+                    'fast': ['⚡', '🚀'],
+                    'slow': ['🐢', '🦥'],
+                    'run': ['🏃', '💨'],
+                    'swim': ['🏊', '🌊'],
+                    'fly': ['🪰', '✈️']
+                };
+                
+                words.forEach((w, i) => {
+                    const emojis = emojiPairs[w.english] || [w.emoji, '❓'];
+                    pairs.push({ type: 'emoji', content: emojis[0], id: 'e' + i, matchId: 'e' + i + '_pair' });
+                    pairs.push({ type: 'emoji', content: emojis[1], id: 'e' + i + '_pair', matchId: 'e' + i });
+                });
+            } else {
+                // Chinese: match emoji with Chinese character
+                words.forEach((w, i) => {
+                    pairs.push({ type: 'emoji', content: w.emoji, id: 'e' + i, matchId: 'c' + i });
+                    pairs.push({ type: 'text', content: w.chinese, id: 'c' + i, matchId: 'e' + i });
+                });
+            }
+            
             const shuffled = shuffle(pairs);
+            const isEnglish = currentCategory.includes('學英文');
             document.getElementById('match-score').textContent = '⭐ ' + matchScore;
-            document.getElementById('match-grid').innerHTML = shuffled.map(p => 
-                `<div class="matching-card" style="background:${p.type==='emoji'?'#FFE66D':'#4ECDC4'}" 
+            document.getElementById('match-grid').innerHTML = shuffled.map((p, idx) => 
+                `<div class="matching-card" style="background:${idx % 2 === 0 ? '#FFE66D' : '#4ECDC4'}" 
                      data-id="${p.id}" data-mid="${p.matchId}" onclick="selectMatch(this)">${p.content}</div>`
             ).join('');
         }
