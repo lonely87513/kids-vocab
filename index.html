@@ -592,11 +592,25 @@
             options = shuffle(options);
             
             quizAnswered++;
-            document.getElementById('quiz-emoji').textContent = correct.emoji;
-            document.getElementById('quiz-encourage').textContent = '';
-            document.getElementById('quiz-options').innerHTML = options.map(opt => 
-                `<button class="option-btn" onclick="checkAnswer(this, '${opt.chinese}', '${correct.chinese}')">${opt.chinese}</button>`
-            ).join('');
+
+            // Check if English category - show English only
+            const isEnglish = currentCategory.includes('學英文');
+            
+            if (isEnglish) {
+                // English quiz: show emoji + English, options are English
+                document.getElementById('quiz-emoji').textContent = correct.emoji + ' ' + correct.english;
+                document.getElementById('quiz-encourage').textContent = '揀啱佢！';
+                document.getElementById('quiz-options').innerHTML = options.map(opt => 
+                    `<button class="option-btn" onclick="checkAnswer(this, '${opt.english}', '${correct.english}')">${opt.english}</button>`
+                ).join('');
+            } else {
+                // Chinese quiz: show emoji, options are Chinese
+                document.getElementById('quiz-emoji').textContent = correct.emoji;
+                document.getElementById('quiz-encourage').textContent = '呢個係咩字？';
+                document.getElementById('quiz-options').innerHTML = options.map(opt => 
+                    `<button class="option-btn" onclick="checkAnswer(this, '${opt.chinese}', '${correct.chinese}')">${opt.chinese}</button>`
+                ).join('');
+            }
         }
         
         function checkAnswer(btn, ans, correct) {
@@ -622,9 +636,13 @@
             ).join('');
             const words = vocabulary[currentCategory].slice(0, 4);
             const pairs = [];
+            const isEnglish = currentCategory.includes('學英文');
             words.forEach((w, i) => {
+                // For English, match emoji with English word
+                // For Chinese, match emoji with Chinese character
+                const text = isEnglish ? w.english : w.chinese;
                 pairs.push({ type: 'emoji', content: w.emoji, id: 'e' + i, matchId: 'c' + i });
-                pairs.push({ type: 'chinese', content: w.chinese, id: 'c' + i, matchId: 'e' + i });
+                pairs.push({ type: 'text', content: text, id: 'c' + i, matchId: 'e' + i });
             });
             const shuffled = shuffle(pairs);
             document.getElementById('match-score').textContent = '⭐ ' + matchScore;
