@@ -450,6 +450,81 @@
         let quizScore = 0;
         let matchScore = 0;
         let selectedMatch = null;
+        let quizWords = []; // Shuffled quiz words
+        let quizAnswered = 0;
+        
+        // Audio Context for sound effects
+        let audioCtx = null;
+        
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        function playCorrectSound() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            // Happy ascending notes
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+            osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialDecayTo = 0.01;
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+        
+        function playWrongSound() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            // Sad descending notes
+            osc.frequency.setValueAtTime(392, audioCtx.currentTime); // G4
+            osc.frequency.setValueAtTime(349.23, audioCtx.currentTime + 0.15); // F4
+            osc.frequency.setValueAtTime(329.63, audioCtx.currentTime + 0.3); // E4
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+        
+        function playWinSound() {
+            initAudio();
+            const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.15);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.2);
+                osc.start(audioCtx.currentTime + i * 0.15);
+                osc.stop(audioCtx.currentTime + i * 0.15 + 0.2);
+            });
+        }
+        
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
         
         function showGame(game) {
             document.querySelectorAll('.game-area').forEach(el => el.classList.remove('active'));
@@ -488,19 +563,35 @@
             document.getElementById('quiz-tabs').innerHTML = getCategories().map(cat => 
                 `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" onclick="currentCategory='${cat}'; initQuiz();">${cat}</button>`
             ).join('');
+            // Shuffle words for quiz
+            quizWords = shuffle(vocabulary[currentCategory]);
+            quizScore = 0;
+            quizAnswered = 0;
+            document.getElementById('quiz-score').textContent = '⭐ 0';
             renderQuiz();
         }
         
         function renderQuiz() {
-            const words = vocabulary[currentCategory];
-            const correct = words[Math.floor(Math.random() * words.length)];
+            if (quizWords.length === 0) {
+                // Quiz complete!
+                document.getElementById('quiz-emoji').textContent = '🎊';
+                document.getElementById('quiz-encourage').textContent = `完成晒！勁呀！⭐⭐⭐`;
+                document.getElementById('quiz-options').innerHTML = '';
+                playWinSound();
+                setTimeout(() => initQuiz(), 3000); // Restart
+                return;
+            }
+            
+            const correct = quizWords.pop();
             let options = [correct];
-            const others = words.filter(w => w !== correct);
+            const others = vocabulary[currentCategory].filter(w => w !== correct);
             while (options.length < 4 && others.length > 0) {
                 const idx = Math.floor(Math.random() * others.length);
                 if (!options.includes(others[idx])) options.push(others[idx]);
             }
-            options = options.sort(() => Math.random() - 0.5);
+            options = shuffle(options);
+            
+            quizAnswered++;
             document.getElementById('quiz-emoji').textContent = correct.emoji;
             document.getElementById('quiz-encourage').textContent = '';
             document.getElementById('quiz-options').innerHTML = options.map(opt => 
@@ -511,13 +602,17 @@
         function checkAnswer(btn, ans, correct) {
             if (ans === correct) {
                 btn.classList.add('correct');
+                playCorrectSound();
                 quizScore++;
                 document.getElementById('quiz-score').textContent = '⭐ ' + quizScore;
-                const encourages = ['勁呀！🎉', '叻叻猪！🐷', '好叻呀！⭐'];
+                const encourages = ['勁呀！🎉', '叻叻猪！🐷', '好叻呀！⭐', '叻到呢！👏', '正呀！💪'];
                 document.getElementById('quiz-encourage').textContent = encourages[Math.floor(Math.random() * encourages.length)];
-                setTimeout(renderQuiz, 1500);
+                setTimeout(renderQuiz, 1200);
             } else {
                 btn.classList.add('wrong');
+                playWrongSound();
+                const wrongMsg = ['加油呀！💪', '再試吓！😊', '唔緊要！🤗', '繼續努力！🌟'];
+                document.getElementById('quiz-encourage').textContent = wrongMsg[Math.floor(Math.random() * wrongMsg.length)];
             }
         }
         
@@ -531,7 +626,7 @@
                 pairs.push({ type: 'emoji', content: w.emoji, id: 'e' + i, matchId: 'c' + i });
                 pairs.push({ type: 'chinese', content: w.chinese, id: 'c' + i, matchId: 'e' + i });
             });
-            const shuffled = pairs.sort(() => Math.random() - 0.5);
+            const shuffled = shuffle(pairs);
             document.getElementById('match-score').textContent = '⭐ ' + matchScore;
             document.getElementById('match-grid').innerHTML = shuffled.map(p => 
                 `<div class="matching-card" style="background:${p.type==='emoji'?'#FFE66D':'#4ECDC4'}" 
@@ -551,10 +646,23 @@
                 } else if (selectedMatch.dataset.mid === card.dataset.id) {
                     card.classList.add('matched');
                     selectedMatch.classList.add('matched');
+                    playCorrectSound();
                     matchScore++;
                     document.getElementById('match-score').textContent = '⭐ ' + matchScore;
                     selectedMatch = null;
+                    
+                    // Check if all matched
+                    const remaining = document.querySelectorAll('.matching-card:not(.matched)');
+                    if (remaining.length === 0) {
+                        setTimeout(() => {
+                            playWinSound();
+                            alert('🎊 完成晒！勁呀！⭐⭐⭐');
+                            matchScore = 0;
+                            initMatching();
+                        }, 500);
+                    }
                 } else {
+                    playWrongSound();
                     selectedMatch.classList.remove('selected');
                     selectedMatch = card;
                     card.classList.add('selected');
