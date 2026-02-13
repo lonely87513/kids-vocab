@@ -645,9 +645,9 @@
             const isEnglish = currentCategory.includes('學英文');
             
             if (isEnglish) {
-                // English quiz: show emoji + English, options are English
-                document.getElementById('quiz-emoji').textContent = correct.emoji + ' ' + correct.english;
-                document.getElementById('quiz-encourage').textContent = '揀啱佢！';
+                // English quiz: show emoji only (like Chinese), options are English
+                document.getElementById('quiz-emoji').textContent = correct.emoji;
+                document.getElementById('quiz-encourage').textContent = 'What is this?';
                 document.getElementById('quiz-options').innerHTML = options.map(opt => 
                     `<button class="option-btn" onclick="checkAnswer(this, '${opt.english}', '${correct.english}')">${opt.english}</button>`
                 ).join('');
