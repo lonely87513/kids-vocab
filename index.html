@@ -451,6 +451,7 @@
         let matchScore = 0;
         let selectedMatch = null;
         let quizWords = []; // Shuffled quiz words
+        let flashcardWords = []; // Shuffled flashcards
         let quizAnswered = 0;
         
         // Audio Context for sound effects
@@ -542,11 +543,14 @@
                 `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" 
                     onclick="currentCategory='${cat}'; currentCard=0; initFlashcards();">${cat}</button>`
             ).join('');
+            // Shuffle flashcards
+            flashcardWords = shuffle(vocabulary[currentCategory]);
+            currentCard = 0;
             renderCard();
         }
         
         function renderCard() {
-            const words = vocabulary[currentCategory];
+            const words = flashcardWords.length > 0 ? flashcardWords : vocabulary[currentCategory];
             const word = words[currentCard];
             document.getElementById('fc-progress').style.width = ((currentCard + 1) / words.length * 100) + '%';
             document.getElementById('fc-progress').textContent = `${currentCard + 1}/${words.length}`;
@@ -557,7 +561,7 @@
         }
         
         function prevCard() { if (currentCard > 0) { currentCard--; renderCard(); } }
-        function nextCard() { const w = vocabulary[currentCategory]; if (currentCard < w.length - 1) { currentCard++; renderCard(); } }
+        function nextCard() { const words = flashcardWords.length > 0 ? flashcardWords : vocabulary[currentCategory]; if (currentCard < words.length - 1) { currentCard++; renderCard(); } }
         
         function initQuiz() {
             document.getElementById('quiz-tabs').innerHTML = getCategories().map(cat => 
