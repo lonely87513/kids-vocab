@@ -18,16 +18,19 @@
 - 🔢 數字 (一, 二, 三...)
 - 🎨 顏色 (紅色, 藍色, 黃色...)
 
+## 🌐 Website
+
+**https://lonely87513.github.io/kids-vocab/**
+
 ## 🚀 Deploy to GitHub Pages
 
-```bash
-# 1. Create repo on GitHub
-# 2. Upload this folder
-# 3. Settings > Pages > GitHub Actions
-# 4. Auto deploy!
-```
+Already deployed! Just push changes:
 
-URL: `https://yourusername.github.io/kids-vocab/`
+```bash
+git add .
+git commit -m "Update"
+git push
+```
 
 ## 💡 本地使用
 
