@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 孖寶學字詞 - 5歲小朋友</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Comic Sans MS", "Microsoft JhengHei", sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #fff;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .menu {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .menu-btn {
+            padding: 20px 40px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+        }
+        
+        .menu-btn:hover {
+            transform: translateY(-3px);
+        }
+        
+        .btn-flashcards { background: #FF6B6B; color: white; }
+        .btn-quiz { background: #4ECDC4; color: white; }
+        .btn-matching { background: #FFE66D; color: #333; }
+        .btn-add { background: #95E1D3; color: #333; }
+        
+        .game-area {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+        
+        .game-area.active {
+            display: block;
+        }
+        
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .card {
+            width: 150px;
+            height: 180px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .card-front {
+            background: linear-gradient(145deg, #FF9A9E, #FECFEF);
+            font-size: 4em;
+        }
+        
+        .card-back {
+            background: linear-gradient(145deg, #A8EDEA, #FED6E3);
+            font-size: 2em;
+            color: #333;
+        }
+        
+        .card-image { font-size: 4em; }
+        .card-text { font-size: 1.8em; font-weight: bold; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 15px;
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .back-btn {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .emoji { font-size: 3em; }
+        .score { font-size: 1.5em; text-align: center; margin: 20px 0; }
+        
+        .encourage {
+            font-size: 2em;
+            text-align: center;
+            color: #667eea;
+            margin: 20px 0;
+        }
+        
+        .options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .option-btn {
+            padding: 20px 30px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            background: #f0f0f0;
+        }
+        
+        .option-btn.correct { background: #4ECDC4 !important; color: white; }
+        .option-btn.wrong { background: #FF6B6B !important; color: white; }
+        
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .category-tab {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            background: #f0f0f0;
+        }
+        
+        .category-tab.active { background: #667eea; color: white; }
+        
+        .matching-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .matching-card {
+            aspect-ratio: 1;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        
+        .matching-card:hover { transform: scale(1.05); }
+        .matching-card.selected { border: 3px solid #667eea; }
+        .matching-card.matched { opacity: 0; pointer-events: none; }
+        
+        .add-word-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .add-word-form input {
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+        }
+        
+        .add-word-form button {
+            padding: 15px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 10px;
+            background: #4ECDC4;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 孖寶學字詞</h1>
+        
+        <div class="menu">
+            <button class="menu-btn btn-flashcards" onclick="showGame('flashcards')">🃏 認字卡</button>
+            <button class="menu-btn btn-quiz" onclick="showGame('quiz')">❓ 估估吓</button>
+            <button class="menu-btn btn-matching" onclick="showGame('matching')">🔗 配對</button>
+            <button class="menu-btn btn-add" onclick="showGame('add')">➕ 加字詞</button>
+        </div>
+        
+        <!-- Flashcards -->
+        <div id="flashcards" class="game-area">
+            <h2 style="text-align: center; color: #667eea;">🃏 認字卡</h2>
+            <div class="category-tabs" id="fc-tabs"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="fc-progress" style="width: 0%">0/0</div>
+            </div>
+            <div class="card-container" id="fc-container"></div>
+            <div style="text-align: center;">
+                <button class="back-btn" onclick="prevCard()">⬅️</button>
+                <button class="back-btn" onclick="nextCard()">➡️</button>
+            </div>
+        </div>
+        
+        <!-- Quiz -->
+        <div id="quiz" class="game-area">
+            <h2 style="text-align: center; color: #4ECDC4;">❓ 估估吓邊個啱？</h2>
+            <div class="category-tabs" id="quiz-tabs"></div>
+            <div class="score" id="quiz-score">⭐ 0</div>
+            <div id="quiz-question" style="text-align: center; margin: 30px 0;">
+                <div class="emoji" id="quiz-emoji">🍎</div>
+                <div style="font-size: 1.5em; color: #667eea; margin-top: 15px;">呢個係咩字？</div>
+            </div>
+            <div class="options" id="quiz-options"></div>
+            <div class="encourage" id="quiz-encourage"></div>
+        </div>
+        
+        <!-- Matching -->
+        <div id="matching" class="game-area">
+            <h2 style="text-align: center; color: #FFE66D;">🔗 圖文配對</h2>
+            <div class="category-tabs" id="match-tabs"></div>
+            <div class="score" id="match-score">⭐ 0</div>
+            <div class="matching-grid" id="match-grid"></div>
+        </div>
+        
+        <!-- Add Word -->
+        <div id="add" class="game-area">
+            <h2 style="text-align: center; color: #95E1D3;">➕ 加字詞</h2>
+            <div class="add-word-form">
+                <input type="text" id="add-category" placeholder="類別 (例如：動物、水果)">
+                <input type="text" id="add-word" placeholder="中文字詞">
+                <input type="text" id="add-emoji" placeholder="Emoji (例如：🍎)">
+                <input type="text" id="add-english" placeholder="英文 (例如：Apple)">
+                <button onclick="addWord()">✅ 加入</button>
+            </div>
+            <div id="add-result" style="text-align: center; margin-top: 20px; font-size: 1.3em;"></div>
+        </div>
+    </div>
+    
+    <script>
+        let vocabulary = {
+            '🍎 水果': [
+                { chinese: '蘋果', emoji: '🍎', english: 'Apple' },
+                { chinese: '香蕉', emoji: '🍌', english: 'Banana' },
+                { chinese: '橙', emoji: '🍊', english: 'Orange' },
+                { chinese: '葡萄', emoji: '🍇', english: 'Grape' },
+                { chinese: '西瓜', emoji: '🍉', english: 'Watermelon' }
+            ],
+            '🐱 動物': [
+                { chinese: '貓', emoji: '🐱', english: 'Cat' },
+                { chinese: '狗', emoji: '🐶', english: 'Dog' },
+                { chinese: '兔', emoji: '🐰', english: 'Rabbit' },
+                { chinese: '熊貓', emoji: '🐼', english: 'Panda' },
+                { chinese: '老虎', emoji: '🐯', english: 'Tiger' }
+            ],
+            '🔢 數字': [
+                { chinese: '一', emoji: '1️⃣', english: 'One' },
+                { chinese: '二', emoji: '2️⃣', english: 'Two' },
+                { chinese: '三', emoji: '3️⃣', english: 'Three' }
+            ],
+            '📚 學中文': [
+                // (一) 默生字 - Basic Characters (13)
+                { chinese: '日', emoji: '☀️', english: 'Sun/Day' },
+                { chinese: '上', emoji: '⬆️', english: 'Up' },
+                { chinese: '下', emoji: '⬇️', english: 'Down' },
+                { chinese: '口', emoji: '👄', english: 'Mouth' },
+                { chinese: '中', emoji: '⭕', english: 'Middle' },
+                { chinese: '小', emoji: '🔹', english: 'Small' },
+                { chinese: '人', emoji: '👤', english: 'Person' },
+                { chinese: '大', emoji: '🔶', english: 'Big' },
+                { chinese: '天', emoji: '🌤️', english: 'Sky/Day' },
+                { chinese: '白', emoji: '⬜', english: 'White' },
+                { chinese: '月', emoji: '🌙', english: 'Moon/Month' },
+                { chinese: '木', emoji: '🌳', english: 'Wood/Tree' },
+                { chinese: '山', emoji: '⛰️', english: 'Mountain' },
+                
+                // (二) 認讀生字 - Characters (19)
+                { chinese: '愛', emoji: '❤️', english: 'Love' },
+                { chinese: '爸', emoji: '👨', english: 'Dad' },
+                { chinese: '門', emoji: '🚪', english: 'Door' },
+                { chinese: '婆', emoji: '👵', english: 'Grandma' },
+                { chinese: '媽', emoji: '👩', english: 'Mom' },
+                { chinese: '哥', emoji: '👦', english: 'Brother' },
+                { chinese: '姐', emoji: '👧', english: 'Sister' },
+                { chinese: '弟', emoji: '👶', english: 'Younger Brother' },
+                { chinese: '爺', emoji: '👴', english: 'Grandpa' },
+                { chinese: '嫲', emoji: '👵', english: 'Grandma' },
+                { chinese: '妹', emoji: '👧', english: 'Younger Sister' },
+                { chinese: '公', emoji: '👴', english: 'Grandpa' },
+                { chinese: '家', emoji: '🏠', english: 'Home' },
+                { chinese: '窗', emoji: '🪟', english: 'Window' },
+                { chinese: '橋', emoji: '🌉', english: 'Bridge' },
+                { chinese: '建', emoji: '🏗️', english: 'Build' },
+                { chinese: '座', emoji: '🪑', english: 'Seat' },
+                { chinese: '錢', emoji: '💰', english: 'Money' },
+                { chinese: '買', emoji: '🛒', english: 'Buy' },
+                
+                // (三) 認讀詞語 - Phrases (42)
+                { chinese: '房屋', emoji: '🏠', english: 'House' },
+                { chinese: '電器', emoji: '🔌', english: 'Appliances' },
+                { chinese: '用品', emoji: '📦', english: 'Supplies' },
+                { chinese: '家具', emoji: '🪑', english: 'Furniture' },
+                { chinese: '椅子', emoji: '🪑', english: 'Chair' },
+                { chinese: '空氣', emoji: '💨', english: 'Air' },
+                { chinese: '有禮貌', emoji: '🙇', english: 'Polite' },
+                { chinese: '錢箱', emoji: '💰', english: 'Money Box' },
+                { chinese: '錢幣', emoji: '🪙', english: 'Coins' },
+                { chinese: '購物', emoji: '🛍️', english: 'Shopping' },
+                { chinese: '幫助', emoji: '🤝', english: 'Help' },
+                { chinese: '開心', emoji: '😊', english: 'Happy' },
+                { chinese: '高樓', emoji: '🏢', english: 'Tall Building' },
+                { chinese: '大廈', emoji: '🏢', english: 'Building' },
+                { chinese: '大大的', emoji: '🔶', english: 'Big' },
+                { chinese: '方方的', emoji: '🟥', english: 'Square' },
+                { chinese: '美麗的', emoji: '🌸', english: 'Beautiful' },
+                { chinese: '泥土', emoji: '🟤', english: 'Soil' },
+                { chinese: '堅固的', emoji: '🧱', english: 'Strong' },
+                { chinese: '矮矮的', emoji: '📏', english: 'Short' },
+                { chinese: '美好', emoji: '🌟', english: 'Beautiful' },
+                { chinese: '珍惜', emoji: '💎', english: 'Cherish' },
+                { chinese: '生命', emoji: '💚', english: 'Life' },
+                { chinese: '水份', emoji: '💧', english: 'Water' },
+                { chinese: '夢想', emoji: '💭', english: 'Dream' },
+                { chinese: '旅遊', emoji: '✈️', english: 'Travel' },
+                { chinese: '友愛', emoji: '🤝', english: 'Friendship' },
+                { chinese: '難忘', emoji: '⭐', english: 'Unforgettable' },
+                { chinese: '陽光', emoji: '☀️', english: 'Sunshine' },
+                { chinese: '有趣', emoji: '😄', english: 'Fun' },
+                { chinese: '種花', emoji: '🌷', english: 'Plant Flowers' },
+                { chinese: '畫畫', emoji: '🎨', english: 'Draw' },
+                { chinese: '跑步', emoji: '🏃', english: 'Run' },
+                { chinese: '憤怒', emoji: '😠', english: 'Angry' },
+                { chinese: '重要', emoji: '⭐', english: 'Important' },
+                { chinese: '驚慌', emoji: '😨', english: 'Scared' },
+                { chinese: '快樂', emoji: '🎉', english: 'Happy' },
+                { chinese: '回憶', emoji: '📔', english: 'Memories' },
+                { chinese: '掛念', emoji: '💕', english: 'Miss' },
+                { chinese: '感謝', emoji: '🙏', english: 'Thank' },
+                { chinese: '偉大', emoji: '🏆', english: 'Great' }
+            ],
+            '🅰️ 學英文': [
+                // Recognition of words
+                { chinese: '一', emoji: '1️⃣', english: 'one' },
+                { chinese: '二', emoji: '2️⃣', english: 'two' },
+                { chinese: '三', emoji: '3️⃣', english: 'three' },
+                { chinese: '四', emoji: '4️⃣', english: 'four' },
+                { chinese: '五', emoji: '5️⃣', english: 'five' },
+                { chinese: '六', emoji: '6️⃣', english: 'six' },
+                { chinese: '貓', emoji: '🐱', english: 'cat' },
+                { chinese: '狗', emoji: '🐶', english: 'dog' },
+                { chinese: '鳥', emoji: '🐦', english: 'bird' },
+                { chinese: '魚', emoji: '🐟', english: 'fish' },
+                { chinese: '跑', emoji: '🏃', english: 'run' },
+                { chinese: '游水', emoji: '🏊', english: 'swim' },
+                { chinese: '跳', emoji: '⬆️', english: 'jump' },
+                { chinese: '我', emoji: '👤', english: 'I' },
+                { chinese: '我', emoji: '👤', english: 'am' },
+                { chinese: '佢', emoji: '👤', english: 'it' },
+                { chinese: '係', emoji: '✅', english: 'is' },
+                { chinese: '一個', emoji: '1️⃣', english: 'a' },
+                { chinese: '一個', emoji: '2️⃣', english: 'an' },
+                { chinese: '呢個', emoji: '📍', english: 'the' },
+                { chinese: '我', emoji: '👤', english: 'me' },
+                { chinese: '我哋', emoji: '👥', english: 'we' },
+                { chinese: '可以', emoji: '👍', english: 'can' },
+                { chinese: '見到', emoji: '👀', english: 'see' },
+                { chinese: '鐘意', emoji: '❤️', english: 'like' },
+                // Recognition of pictures and words
+                { chinese: '七', emoji: '7️⃣', english: 'seven' },
+                { chinese: '八', emoji: '8️⃣', english: 'eight' },
+                { chinese: '九', emoji: '9️⃣', english: 'nine' },
+                { chinese: '十', emoji: '🔟', english: 'ten' },
+                { chinese: '零', emoji: '0️⃣', english: 'zero' },
+                { chinese: '爸爸', emoji: '👨', english: 'father' },
+                { chinese: '媽媽', emoji: '👩', english: 'mother' },
+                { chinese: '哥哥', emoji: '👦', english: 'brother' },
+                { chinese: '姐姐', emoji: '👧', english: 'sister' },
+                { chinese: '爺爺', emoji: '👴', english: 'grandfather' },
+                { chinese: '嫲嫲', emoji: '👵', english: 'grandmother' },
+                { chinese: '高', emoji: '📏', english: 'tall' },
+                { chinese: '矮', emoji: '📏', english: 'short' },
+                { chinese: '快', emoji: '⚡', english: 'fast' },
+                { chinese: '慢', emoji: '🐢', english: 'slow' },
+                { chinese: '兔', emoji: '🐰', english: 'rabbit' },
+                { chinese: '蜘蛛', emoji: '🕷️', english: 'spider' },
+                { chinese: '蛇', emoji: '🐍', english: 'snake' },
+                { chinese: '烏龜', emoji: '🐢', english: 'turtle' },
+                { chinese: '倉鼠', emoji: '🐹', english: 'hamster' },
+                { chinese: '變色龍', emoji: '🦎', english: 'chameleon' },
+                { chinese: '游水', emoji: '🏊', english: 'swim' },
+                { chinese: '飛', emoji: '🪰', english: 'fly' }
+            ]
+        };
+        
+        let currentCategory = '🍎 水果';
+        let currentCard = 0;
+        let quizScore = 0;
+        let matchScore = 0;
+        let selectedMatch = null;
+        let quizWords = []; // Shuffled quiz words
+        let flashcardWords = []; // Shuffled flashcards
+        let quizAnswered = 0;
+        
+        // Audio Context for sound effects
+        let audioCtx = null;
+        
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        function playCorrectSound() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            // Happy ascending notes
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+            osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialDecayTo = 0.01;
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+        
+        function playWrongSound() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            // Sad descending notes
+            osc.frequency.setValueAtTime(392, audioCtx.currentTime); // G4
+            osc.frequency.setValueAtTime(349.23, audioCtx.currentTime + 0.15); // F4
+            osc.frequency.setValueAtTime(329.63, audioCtx.currentTime + 0.3); // E4
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+        
+        function playWinSound() {
+            initAudio();
+            const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.15);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.2);
+                osc.start(audioCtx.currentTime + i * 0.15);
+                osc.stop(audioCtx.currentTime + i * 0.15 + 0.2);
+            });
+        }
+        
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        
+        function showGame(game) {
+            document.querySelectorAll('.game-area').forEach(el => el.classList.remove('active'));
+            document.getElementById(game).classList.add('active');
+            if (game === 'flashcards') initFlashcards();
+            if (game === 'quiz') initQuiz();
+            if (game === 'matching') initMatching();
+        }
+        
+        function getCategories() { return Object.keys(vocabulary); }
+        
+        function initFlashcards() {
+            // Render tabs
+            document.getElementById('fc-tabs').innerHTML = getCategories().map(cat => 
+                `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" 
+                    onclick="switchCategory('${cat}');">${cat}</button>`
+            ).join('');
+            // Always shuffle when entering or switching category
+            flashcardWords = shuffle([...vocabulary[currentCategory]]);
+            currentCard = 0;
+            renderCard();
+        }
+        
+        function switchCategory(cat) {
+            currentCategory = cat;
+            flashcardWords = shuffle([...vocabulary[currentCategory]]);
+            currentCard = 0;
+            renderCard();
+            // Update active tab
+            document.querySelectorAll('#fc-tabs .category-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === cat);
+            });
+        }
+        
+        function renderCard() {
+            const words = flashcardWords.length > 0 ? flashcardWords : shuffle([...vocabulary[currentCategory]]);
+            const word = words[currentCard];
+            const isEnglish = currentCategory.includes('學英文');
+            
+            document.getElementById('fc-progress').style.width = ((currentCard + 1) / words.length * 100) + '%';
+            document.getElementById('fc-progress').textContent = `${currentCard + 1}/${words.length}`;
+            
+            if (isEnglish) {
+                // English: show emoji + English only
+                document.getElementById('fc-container').innerHTML = `
+                    <div class="card card-front"><div class="card-image">${word.emoji}</div></div>
+                    <div class="card card-back"><div class="card-text">${word.english}</div></div>
+                `;
+            } else {
+                // Chinese: show emoji + Chinese + English
+                document.getElementById('fc-container').innerHTML = `
+                    <div class="card card-front"><div class="card-image">${word.emoji}</div></div>
+                    <div class="card card-back"><div class="card-text">${word.chinese}</div><div style="font-size:0.6em;color:#666;">${word.english}</div></div>
+                `;
+            }
+        }
+        
+        function prevCard() { 
+            const words = flashcardWords.length > 0 ? flashcardWords : vocabulary[currentCategory];
+            if (currentCard > 0) { currentCard--; renderCard(); } 
+        }
+        function nextCard() { 
+            const words = flashcardWords.length > 0 ? flashcardWords : vocabulary[currentCategory];
+            if (currentCard < words.length - 1) { currentCard++; renderCard(); } 
+        }
+        
+        function initQuiz() {
+            // Render tabs
+            document.getElementById('quiz-tabs').innerHTML = getCategories().map(cat => 
+                `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" 
+                    onclick="switchQuizCategory('${cat}');">${cat}</button>`
+            ).join('');
+            // Shuffle words for quiz
+            quizWords = shuffle([...vocabulary[currentCategory]]);
+            quizScore = 0;
+            quizAnswered = 0;
+            document.getElementById('quiz-score').textContent = '⭐ 0';
+            renderQuiz();
+        }
+        
+        function switchQuizCategory(cat) {
+            currentCategory = cat;
+            quizWords = shuffle([...vocabulary[currentCategory]]);
+            quizScore = 0;
+            quizAnswered = 0;
+            document.getElementById('quiz-score').textContent = '⭐ 0';
+            // Update active tab
+            document.querySelectorAll('#quiz-tabs .category-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === cat);
+            });
+            renderQuiz();
+        }
+        
+        function renderQuiz() {
+            if (quizWords.length === 0) {
+                // Quiz complete!
+                document.getElementById('quiz-emoji').textContent = '🎊';
+                document.getElementById('quiz-encourage').textContent = `完成晒！勁呀！⭐⭐⭐`;
+                document.getElementById('quiz-options').innerHTML = '';
+                playWinSound();
+                setTimeout(() => initQuiz(), 3000); // Restart
+                return;
+            }
+            
+            const correct = quizWords.pop();
+            let options = [correct];
+            const others = vocabulary[currentCategory].filter(w => w !== correct);
+            while (options.length < 4 && others.length > 0) {
+                const idx = Math.floor(Math.random() * others.length);
+                if (!options.includes(others[idx])) options.push(others[idx]);
+            }
+            options = shuffle(options);
+            
+            quizAnswered++;
+
+            // Check if English category - show English only
+            const isEnglish = currentCategory.includes('學英文');
+            
+            if (isEnglish) {
+                // English quiz: show emoji only (like Chinese), options are English
+                document.getElementById('quiz-emoji').textContent = correct.emoji;
+                document.getElementById('quiz-encourage').textContent = 'What is this?';
+                document.getElementById('quiz-options').innerHTML = options.map(opt => 
+                    `<button class="option-btn" onclick="checkAnswer(this, '${opt.english}', '${correct.english}')">${opt.english}</button>`
+                ).join('');
+            } else {
+                // Chinese quiz: show emoji, options are Chinese
+                document.getElementById('quiz-emoji').textContent = correct.emoji;
+                document.getElementById('quiz-encourage').textContent = '呢個係咩字？';
+                document.getElementById('quiz-options').innerHTML = options.map(opt => 
+                    `<button class="option-btn" onclick="checkAnswer(this, '${opt.chinese}', '${correct.chinese}')">${opt.chinese}</button>`
+                ).join('');
+            }
+        }
+        
+        function checkAnswer(btn, ans, correct) {
+            if (ans === correct) {
+                btn.classList.add('correct');
+                playCorrectSound();
+                quizScore++;
+                document.getElementById('quiz-score').textContent = '⭐ ' + quizScore;
+                const encourages = ['勁呀！🎉', '叻叻猪！🐷', '好叻呀！⭐', '叻到呢！👏', '正呀！💪'];
+                document.getElementById('quiz-encourage').textContent = encourages[Math.floor(Math.random() * encourages.length)];
+                setTimeout(renderQuiz, 1200);
+            } else {
+                btn.classList.add('wrong');
+                playWrongSound();
+                const wrongMsg = ['加油呀！💪', '再試吓！😊', '唔緊要！🤗', '繼續努力！🌟'];
+                document.getElementById('quiz-encourage').textContent = wrongMsg[Math.floor(Math.random() * wrongMsg.length)];
+            }
+        }
+        
+        function initMatching() {
+            document.getElementById('match-tabs').innerHTML = getCategories().map(cat => 
+                `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" onclick="currentCategory='${cat}'; initMatching();">${cat}</button>`
+            ).join('');
+            const words = vocabulary[currentCategory].slice(0, 4);
+            const pairs = [];
+            const isEnglish = currentCategory.includes('學英文');
+            
+            if (isEnglish) {
+                // English: match emoji with different emoji (same meaning)
+                // This prevents obvious answers
+                const emojiPairs = {
+                    'one': ['1️⃣', '①'],
+                    'two': ['2️⃣', '②'],
+                    'three': ['3️⃣', '③'],
+                    'four': ['4️⃣', '④'],
+                    'five': ['5️⃣', '⑤'],
+                    'six': ['6️⃣', '⑥'],
+                    'seven': ['7️⃣', '⑦'],
+                    'eight': ['8️⃣', '⑧'],
+                    'nine': ['9️⃣', '⑨'],
+                    'ten': ['🔟', '⑩'],
+                    'zero': ['0️⃣', '𝟎'],
+                    'cat': ['🐱', '😺'],
+                    'dog': ['🐶', '🐕'],
+                    'bird': ['🐦', '🐥'],
+                    'fish': ['🐟', '🐠'],
+                    'rabbit': ['🐰', '🐇'],
+                    'snake': ['🐍', '🐲'],
+                    'turtle': ['🐢', '🐾'],
+                    'spider': ['🕷️', '🕸️'],
+                    'hamster': ['🐹', '🐭'],
+                    'chameleon': ['🦎', '🐸'],
+                    'father': ['👨', '👦'],
+                    'mother': ['👩', '👧'],
+                    'brother': ['👦', '👨'],
+                    'sister': ['👧', '👩'],
+                    'grandfather': ['👴', '🧔'],
+                    'grandmother': ['👵', '👵‍♀️'],
+                    'tall': ['📏', '🗼'],
+                    'short': ['📐', '🏔️'],
+                    'fast': ['⚡', '🚀'],
+                    'slow': ['🐢', '🦥'],
+                    'run': ['🏃', '💨'],
+                    'swim': ['🏊', '🌊'],
+                    'fly': ['🪰', '✈️']
+                };
+                
+                words.forEach((w, i) => {
+                    const emojis = emojiPairs[w.english] || [w.emoji, '❓'];
+                    pairs.push({ type: 'emoji', content: emojis[0], id: 'e' + i, matchId: 'e' + i + '_pair' });
+                    pairs.push({ type: 'emoji', content: emojis[1], id: 'e' + i + '_pair', matchId: 'e' + i });
+                });
+            } else {
+                // Chinese: match emoji with Chinese character
+                words.forEach((w, i) => {
+                    pairs.push({ type: 'emoji', content: w.emoji, id: 'e' + i, matchId: 'c' + i });
+                    pairs.push({ type: 'text', content: w.chinese, id: 'c' + i, matchId: 'e' + i });
+                });
+            }
+            
+            const shuffled = shuffle(pairs);
+            const isEnglish = currentCategory.includes('學英文');
+            document.getElementById('match-score').textContent = '⭐ ' + matchScore;
+            document.getElementById('match-grid').innerHTML = shuffled.map((p, idx) => 
+                `<div class="matching-card" style="background:${idx % 2 === 0 ? '#FFE66D' : '#4ECDC4'}" 
+                     data-id="${p.id}" data-mid="${p.matchId}" onclick="selectMatch(this)">${p.content}</div>`
+            ).join('');
+        }
+        
+        function selectMatch(card) {
+            if (card.classList.contains('matched')) return;
+            if (!selectedMatch) {
+                selectedMatch = card;
+                card.classList.add('selected');
+            } else {
+                if (selectedMatch.dataset.id === card.dataset.id) {
+                    selectedMatch.classList.remove('selected');
+                    selectedMatch = null;
+                } else if (selectedMatch.dataset.mid === card.dataset.id) {
+                    card.classList.add('matched');
+                    selectedMatch.classList.add('matched');
+                    playCorrectSound();
+                    matchScore++;
+                    document.getElementById('match-score').textContent = '⭐ ' + matchScore;
+                    selectedMatch = null;
+                    
+                    // Check if all matched
+                    const remaining = document.querySelectorAll('.matching-card:not(.matched)');
+                    if (remaining.length === 0) {
+                        setTimeout(() => {
+                            playWinSound();
+                            alert('🎊 完成晒！勁呀！⭐⭐⭐');
+                            matchScore = 0;
+                            initMatching();
+                        }, 500);
+                    }
+                } else {
+                    playWrongSound();
+                    selectedMatch.classList.remove('selected');
+                    selectedMatch = card;
+                    card.classList.add('selected');
+                }
+            }
+        }
+        
+        function addWord() {
+            const cat = document.getElementById('add-category').value.trim();
+            const w = document.getElementById('add-word').value.trim();
+            const e = document.getElementById('add-emoji').value.trim();
+            const en = document.getElementById('add-english').value.trim();
+            if (!cat || !w || !e) {
+                document.getElementById('add-result').innerHTML = '❌ 要填晒類別、文字、Emoji！';
+                return;
+            }
+            if (!vocabulary[cat]) vocabulary[cat] = [];
+            vocabulary[cat].push({ chinese: w, emoji: e, english: en });
+            document.getElementById('add-result').innerHTML = `✅ 加入成功！<br><div style="font-size:2em">${e}</div><div>${w} = ${en}</div>`;
+            ['add-category','add-word','add-emoji','add-english'].forEach(id => document.getElementById(id).value = '');
+        }
+    </script>
+</body>
+</html>
