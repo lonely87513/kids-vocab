@@ -72,6 +72,9 @@
         <div id="flashcards" class="game-area">
             <h2 style="text-align: center; color: #667eea;">🃏 認字卡</h2>
             <div class="category-tabs" id="fc-tabs"></div>
+            <div style="text-align: center; margin: 15px 0;">
+                <button id="emoji-toggle" onclick="toggleEmoji()" style="padding: 10px 20px; font-size: 1em; border: none; border-radius: 10px; cursor: pointer; background: #FFE66D; color: #333;">👁️ 隱藏 Emoji</button>
+            </div>
             <div class="progress-bar"><div class="progress-fill" id="fc-progress" style="width: 0%">0/0</div></div>
             <div class="card-container" id="fc-container"></div>
             <div style="text-align: center;">
@@ -264,6 +267,7 @@
         let quizWords = [];
         let flashcardWords = [];
         let selectedMatch = null;
+        let showEmoji = true;
         
         // Shuffle function
         function shuffle(array) {
@@ -306,6 +310,13 @@
             ).join('');
         }
         
+        function toggleEmoji() {
+            showEmoji = !showEmoji;
+            document.getElementById('emoji-toggle').innerHTML = showEmoji ? '👁️ 隱藏 Emoji' : '👁️ 顯示 Emoji';
+            document.getElementById('emoji-toggle').style.background = showEmoji ? '#FFE66D' : '#ddd';
+            renderCard();
+        }
+        
         function renderCard() {
             const word = flashcardWords[currentCard];
             const isEnglish = currentCategory.includes('學英文');
@@ -314,12 +325,12 @@
             
             if (isEnglish) {
                 document.getElementById('fc-container').innerHTML = `
-                    <div class="card card-front"><div style="font-size:4em">${word.emoji}</div></div>
+                    <div class="card card-front"><div style="font-size:4em">${showEmoji ? word.emoji : ""}</div></div>
                     <div class="card card-back"><div style="font-size:1.8em;font-weight:bold">${word.english}</div></div>
                 `;
             } else {
                 document.getElementById('fc-container').innerHTML = `
-                    <div class="card card-front"><div style="font-size:4em">${word.emoji}</div></div>
+                    <div class="card card-front"><div style="font-size:4em">${showEmoji ? word.emoji : ""}</div></div>
                     <div class="card card-back"><div style="font-size:1.8em;font-weight:bold">${word.chinese}</div><div style="font-size:0.6em;color:#666">${word.english}</div></div>
                 `;
             }
