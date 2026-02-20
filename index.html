@@ -51,6 +51,12 @@
         .matching-card:hover { transform: scale(1.05); }
         .matching-card.selected { border: 3px solid #667eea; }
         .matching-card.matched { opacity: 0; pointer-events: none; }
+        .matching-card .speak-icon {
+            font-size: 0.6em;
+            opacity: 0.7;
+            margin-left: 5px;
+        }
+        .matching-card:hover .speak-icon { opacity: 1; }
         
         .add-word-form { display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto; }
         .add-word-form input { padding: 15px; font-size: 1.2em; border: 2px solid #ddd; border-radius: 10px; }
@@ -610,10 +616,27 @@
             
             const shuffled = shuffle(pairs);
             document.getElementById('match-score').textContent = '⭐ ' + matchScore;
-            document.getElementById('match-grid').innerHTML = shuffled.map((p, idx) => 
-                `<div class="matching-card" style="background:${idx % 2 === 0 ? '#FFE66D' : '#4ECDC4'}" 
-                     data-id="${p.id}" data-mid="${p.matchId}" onclick="selectMatch(this)">${p.content}</div>`
-            ).join('');
+            document.getElementById('match-grid').innerHTML = shuffled.map((p, idx) => {
+                const bgColor = idx % 2 === 0 ? '#FFE66D' : '#4ECDC4';
+                const isText = p.type === 'text';
+                const speakAttr = isText ? `onclick="event.stopPropagation(); speakMatchText('${p.content}', '${isEnglish ? 'en' : 'zh-HK'}')"` : '';
+                const speakIcon = isText ? '<span class="speak-icon">🔊</span>' : '';
+                return `<div class="matching-card" style="background:${bgColor}" 
+                     data-id="${p.id}" data-mid="${p.matchId}" onclick="selectMatch(this)" ${speakAttr}>
+                     ${p.content}${speakIcon}</div>`;
+            }).join('');
+        }
+        
+        // Speak text for matching game
+        function speakMatchText(text, lang) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.rate = 0.8;
+                utterance.pitch = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
         }
         
         function selectMatch(card) {
