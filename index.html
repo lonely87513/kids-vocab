@@ -55,6 +55,39 @@
         .add-word-form { display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto; }
         .add-word-form input { padding: 15px; font-size: 1.2em; border: 2px solid #ddd; border-radius: 10px; }
         .add-word-form button { padding: 15px; font-size: 1.3em; border: none; border-radius: 10px; background: #4ECDC4; color: white; cursor: pointer; }
+        
+        .speak-btn { 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            width: 50px; 
+            height: 50px; 
+            font-size: 1.5em; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: all 0.3s;
+        }
+        .speak-btn:hover { transform: scale(1.1); background: #764ba2; }
+        .card-back { position: relative; }
+        .quiz-speak-btn {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 15px;
+            background: #FFE66D;
+            color: #333;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .quiz-speak-btn:hover { background: #FFD93D; }
+        
+        .card { position: relative; }
     </style>
 </head>
 <body>
@@ -119,6 +152,11 @@
     </div>
     
     <script>
+        // Load voices early
+        window.speechSynthesis.onvoiceschanged = function() {
+            window.speechSynthesis.getVoices();
+        };
+        
         // Vocabulary data
         const vocabulary = {
             '🍎 水果': [
@@ -326,13 +364,44 @@
             if (isEnglish) {
                 document.getElementById('fc-container').innerHTML = `
                     <div class="card card-front"><div style="font-size:4em">${showEmoji ? word.emoji : ""}</div></div>
-                    <div class="card card-back"><div style="font-size:1.8em;font-weight:bold">${word.english}</div></div>
+                    <div class="card card-back">
+                        <button class="speak-btn" onclick="speakText('${word.english}', 'en')">🔊</button>
+                        <div style="font-size:1.8em;font-weight:bold">${word.english}</div>
+                    </div>
                 `;
             } else {
                 document.getElementById('fc-container').innerHTML = `
                     <div class="card card-front"><div style="font-size:4em">${showEmoji ? word.emoji : ""}</div></div>
-                    <div class="card card-back"><div style="font-size:1.8em;font-weight:bold">${word.chinese}</div><div style="font-size:0.6em;color:#666">${word.english}</div></div>
+                    <div class="card card-back">
+                        <button class="speak-btn" onclick="speakText('${word.chinese}', 'zh-HK')">🔊</button>
+                        <div style="font-size:1.8em;font-weight:bold">${word.chinese}</div>
+                        <div style="font-size:0.6em;color:#666">${word.english}</div>
+                    </div>
                 `;
+            }
+        }
+        
+        // Speak text function
+        function speakText(text, lang) {
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.rate = 0.8; // Slower for kids
+                utterance.pitch = 1.1; // Slightly higher pitch for friendliness
+                
+                // Try to find a Cantonese voice for zh-HK
+                const voices = window.speechSynthesis.getVoices();
+                if (lang === 'zh-HK') {
+                    const cantoneseVoice = voices.find(v => v.lang.includes('zh-HK') || v.lang.includes('yue') || v.lang.includes('zh-CN'));
+                    if (cantoneseVoice) utterance.voice = cantoneseVoice;
+                }
+                
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('呢部機未支援語音功能 🤷');
             }
         }
         
@@ -386,13 +455,15 @@
                 document.getElementById('quiz-prompt').textContent = 'What is this?';
                 document.getElementById('quiz-options').innerHTML = options.map(opt => 
                     `<button class="option-btn" onclick="checkAnswer(this, '${opt.english}', '${correct.english}')">${opt.english}</button>`
-                ).join('');
+                ).join('') + 
+                `<div style="text-align:center;margin-top:15px"><button class="quiz-speak-btn" onclick="speakText('${correct.english}', 'en')">🔊 聽讀音</button></div>`;
             } else {
                 document.getElementById('quiz-emoji').textContent = correct.emoji;
                 document.getElementById('quiz-prompt').textContent = '呢個係咩字？';
                 document.getElementById('quiz-options').innerHTML = options.map(opt => 
                     `<button class="option-btn" onclick="checkAnswer(this, '${opt.chinese}', '${correct.chinese}')">${opt.chinese}</button>`
-                ).join('');
+                ).join('') + 
+                `<div style="text-align:center;margin-top:15px"><button class="quiz-speak-btn" onclick="speakText('${correct.chinese}', 'zh-HK')">🔊 聽粵語</button></div>`;
             }
         }
         
