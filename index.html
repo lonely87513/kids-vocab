@@ -446,20 +446,29 @@
             document.getElementById('fc-progress').style.width = ((currentCard + 1) / flashcardWords.length * 100) + '%';
             document.getElementById('fc-progress').textContent = `${currentCard + 1}/${flashcardWords.length}`;
             
-            // Smaller emoji for learning categories
-            const emojiSize = (isEnglish || isChineseLearning) ? '1.5em' : '4em';
+            // Hide emoji for learning categories
+            const showEmojiForCard = !isEnglish && !isChineseLearning;
             
             if (isEnglish) {
                 document.getElementById('fc-container').innerHTML = `
-                    <div class="card card-front"><div style="font-size:${emojiSize}">${showEmoji ? word.emoji : ""}</div></div>
+                    <div class="card card-front"><div style="font-size:1.2em;color:#666">學英文</div></div>
                     <div class="card card-back">
                         <button class="speak-btn" onclick="speakText('${word.english}', 'en')">🔊</button>
                         <div style="font-size:1.8em;font-weight:bold">${word.english}</div>
                     </div>
                 `;
+            } else if (isChineseLearning) {
+                document.getElementById('fc-container').innerHTML = `
+                    <div class="card card-front"><div style="font-size:1.2em;color:#666">學中文</div></div>
+                    <div class="card card-back">
+                        <button class="speak-btn" onclick="speakText('${word.chinese}', 'zh-HK')">🔊</button>
+                        <div style="font-size:1.8em;font-weight:bold">${word.chinese}</div>
+                        <div style="font-size:0.6em;color:#666">${word.english}</div>
+                    </div>
+                `;
             } else {
                 document.getElementById('fc-container').innerHTML = `
-                    <div class="card card-front"><div style="font-size:${emojiSize}">${showEmoji ? word.emoji : ""}</div></div>
+                    <div class="card card-front"><div style="font-size:4em">${showEmoji ? word.emoji : ""}</div></div>
                     <div class="card card-back">
                         <button class="speak-btn" onclick="speakText('${word.chinese}', 'zh-HK')">🔊</button>
                         <div style="font-size:1.8em;font-weight:bold">${word.chinese}</div>
@@ -576,15 +585,17 @@
             
             const isEnglish = currentCategory.includes('學英文');
             const isChineseLearning = currentCategory.includes('學中文');
-            const emojiSize = (isEnglish || isChineseLearning) ? '1.5em' : '3em';
+            const emojiSize = (isEnglish || isChineseLearning) ? '0' : '3em';
             
             if (isEnglish) {
-                document.getElementById('quiz-emoji').innerHTML = `<span style="font-size:${emojiSize}">${correct.emoji}</span>`;
+                document.getElementById('quiz-emoji').innerHTML = `<span style="font-size:1.2em;color:#666">學英文</span>`;
                 document.getElementById('quiz-prompt').textContent = 'What is this?';
                 document.getElementById('quiz-options').innerHTML = options.map(opt => 
                     `<button class="option-btn" onclick="checkAnswer(this, '${opt.english}', '${correct.english}')">${opt.english}</button>`
                 ).join('') + 
                 `<div style="text-align:center;margin-top:15px"><button class="quiz-speak-btn" onclick="speakText('${correct.english}', 'en')">🔊 聽讀音</button></div>`;
+            } else if (isChineseLearning) {
+                document.getElementById('quiz-emoji').innerHTML = `<span style="font-size:1.2em;color:#666">學中文</span>`;
             } else {
                 document.getElementById('quiz-emoji').innerHTML = `<span style="font-size:${emojiSize}">${correct.emoji}</span>`;
                 document.getElementById('quiz-prompt').textContent = '呢個係咩字？';
