@@ -164,7 +164,7 @@
             <h2 style="text-align: center; color: #667eea;">🃏 認字卡</h2>
             <div class="category-tabs" id="fc-tabs"></div>
             
-            <!-- Quantity Slider for 學中文 & 學英文 -->
+            <!-- Quantity Slider for K2第二段中文 & K2第二段英文 -->
             <div id="fc-quantity-control" class="quantity-control" style="display:none;">
                 <div class="quantity-label">
                     <span>📊 睇幾多題？</span>
@@ -192,7 +192,7 @@
             <h2 style="text-align: center; color: #4ECDC4;">❓ 估估吓邊個啱？</h2>
             <div class="category-tabs" id="quiz-tabs"></div>
             
-            <!-- Quantity Slider for 學中文 & 學英文 -->
+            <!-- Quantity Slider for K2第二段中文 & K2第二段英文 -->
             <div id="quantity-control" class="quantity-control" style="display:none;">
                 <div class="quantity-label">
                     <span>📊 題目數量</span>
@@ -222,7 +222,7 @@
         <div id="add" class="game-area">
             <h2 style="text-align: center; color: #95E1D3;">➕ 加字詞</h2>
             <div class="add-word-form">
-                <input type="text" id="add-category" placeholder="類別 (例如：動物、水果)">
+                <input type="text" id="add-category" placeholder="類別 (例如：K2第二段中文)">
                 <input type="text" id="add-word" placeholder="中文字詞">
                 <input type="text" id="add-emoji" placeholder="Emoji (例如：🍎)">
                 <input type="text" id="add-english" placeholder="英文 (例如：Apple)">
@@ -240,21 +240,7 @@
         
         // Vocabulary data
         const vocabulary = {
-            '🍎 水果': [
-                { chinese: '蘋果', emoji: '🍎', english: 'Apple' },
-                { chinese: '香蕉', emoji: '🍌', english: 'Banana' },
-                { chinese: '橙', emoji: '🍊', english: 'Orange' },
-                { chinese: '葡萄', emoji: '🍇', english: 'Grape' },
-                { chinese: '西瓜', emoji: '🍉', english: 'Watermelon' }
-            ],
-            '🐱 動物': [
-                { chinese: '貓', emoji: '🐱', english: 'Cat' },
-                { chinese: '狗', emoji: '🐶', english: 'Dog' },
-                { chinese: '兔', emoji: '🐰', english: 'Rabbit' },
-                { chinese: '熊貓', emoji: '🐼', english: 'Panda' },
-                { chinese: '老虎', emoji: '🐯', english: 'Tiger' }
-            ],
-            '📚 學中文': [
+            '📚 K2第二段中文': [
                 { chinese: '日', emoji: '☀️', english: 'Sun/Day' },
                 { chinese: '上', emoji: '⬆️', english: 'Up' },
                 { chinese: '下', emoji: '⬇️', english: 'Down' },
@@ -335,7 +321,7 @@
                 { chinese: '新', emoji: '🆕', english: 'New' },
                 { chinese: '舊', emoji: '🗑️', english: 'Old' }
             ],
-            '🅰️ 學英文': [
+            '🅰️ K2第二段英文': [
                 { chinese: '一', emoji: '1️⃣', english: 'one' },
                 { chinese: '二', emoji: '2️⃣', english: 'two' },
                 { chinese: '三', emoji: '3️⃣', english: 'three' },
@@ -360,7 +346,7 @@
         };
         
         // Game state
-        let currentCategory = '🍎 水果';
+        let currentCategory = '📚 K2第二段中文';
         let currentCard = 0;
         let quizScore = 0;
         let matchScore = 0;
@@ -399,7 +385,7 @@
             ).join('');
             
             // Check if showing quantity control
-            const isLearningCategory = currentCategory.includes('學中文') || currentCategory.includes('學英文');
+            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第二段英文');
             document.getElementById('fc-quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             
             // Show quantity slider only for learning categories
@@ -455,8 +441,8 @@
         
         function renderCard() {
             const word = flashcardWords[currentCard];
-            const isEnglish = currentCategory.includes('學英文');
-            const isChineseLearning = currentCategory.includes('學中文');
+            const isEnglish = currentCategory.includes('K2第二段英文');
+            const isChineseLearning = currentCategory.includes('K2第二段中文');
             document.getElementById('fc-progress').style.width = ((currentCard + 1) / flashcardWords.length * 100) + '%';
             document.getElementById('fc-progress').textContent = `${currentCard + 1}/${flashcardWords.length}`;
             
@@ -517,7 +503,7 @@
         // Quiz
         function initQuiz() {
             // Show/hide quantity slider based on category
-            const isLearningCategory = currentCategory.includes('學中文') || currentCategory.includes('學英文');
+            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第二段英文');
             document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             
             // Update slider max based on available words
@@ -565,7 +551,7 @@
             ).join('');
             
             // Update slider visibility and values
-            const isLearningCategory = currentCategory.includes('學中文') || currentCategory.includes('學英文');
+            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第二段英文');
             document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             const availableWords = vocabulary[currentCategory].length;
             document.getElementById('quantity-slider').max = Math.min(20, availableWords);
@@ -592,8 +578,8 @@
             }
             options = shuffle(options);
             
-            const isEnglish = currentCategory.includes('學英文');
-            const isChineseLearning = currentCategory.includes('學中文');
+            const isEnglish = currentCategory.includes('K2第二段英文');
+            const isChineseLearning = currentCategory.includes('K2第二段中文');
             const emojiSize = (isEnglish || isChineseLearning) ? '1.2em' : '3em';
             
             if (isEnglish) {
