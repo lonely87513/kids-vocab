@@ -87,6 +87,50 @@
         }
         .quiz-speak-btn:hover { background: #FFD93D; }
         
+        /* Quantity Slider */
+        .quantity-control {
+            background: #f8f8f8;
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin: 15px auto;
+            max-width: 400px;
+        }
+        .quantity-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+        .quantity-slider {
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .quantity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .quantity-slider::-moz-range-thumb {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
         .card { position: relative; }
     </style>
 </head>
@@ -120,6 +164,16 @@
         <div id="quiz" class="game-area">
             <h2 style="text-align: center; color: #4ECDC4;">❓ 估估吓邊個啱？</h2>
             <div class="category-tabs" id="quiz-tabs"></div>
+            
+            <!-- Quantity Slider for 學中文 & 學英文 -->
+            <div id="quantity-control" class="quantity-control" style="display:none;">
+                <div class="quantity-label">
+                    <span>📊 題目數量</span>
+                    <span id="quantity-display">10 題</span>
+                </div>
+                <input type="range" id="quantity-slider" class="quantity-slider" min="1" max="20" value="10" onchange="updateQuantity(this.value)">
+            </div>
+            
             <div class="score" id="quiz-score">⭐ 0</div>
             <div style="text-align: center; margin: 30px 0;">
                 <div class="emoji" id="quiz-emoji">🍎</div>
@@ -306,6 +360,7 @@
         let flashcardWords = [];
         let selectedMatch = null;
         let showEmoji = true;
+        let quizQuantity = 10; // Default 10 questions
         
         // Shuffle function
         function shuffle(array) {
@@ -410,23 +465,61 @@
         
         // Quiz
         function initQuiz() {
+            // Show/hide quantity slider based on category
+            const isLearningCategory = currentCategory.includes('學中文') || currentCategory.includes('學英文');
+            document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
+            
+            // Update slider max based on available words
+            const availableWords = vocabulary[currentCategory].length;
+            const slider = document.getElementById('quantity-slider');
+            slider.max = Math.min(20, availableWords);
+            if (quizQuantity > availableWords) {
+                quizQuantity = availableWords;
+                slider.value = quizQuantity;
+            }
+            document.getElementById('quantity-display').textContent = `${quizQuantity} 題 / 共 ${availableWords} 題`;
+            
             document.getElementById('quiz-tabs').innerHTML = getCategories().map(cat => 
                 `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" onclick="switchQuizCategory('${cat}')">${cat}</button>`
             ).join('');
-            quizWords = shuffle([...vocabulary[currentCategory]]);
+            
+            // Use quantity limit
+            const allWords = shuffle([...vocabulary[currentCategory]]);
+            quizWords = allWords.slice(0, quizQuantity);
             quizScore = 0;
-            document.getElementById('quiz-score').textContent = '⭐ 0';
+            document.getElementById('quiz-score').textContent = `⭐ 0 / ${quizQuantity}`;
             renderQuiz();
+        }
+        
+        // Update quantity from slider
+        function updateQuantity(value) {
+            quizQuantity = parseInt(value);
+            const availableWords = vocabulary[currentCategory].length;
+            document.getElementById('quantity-display').textContent = `${quizQuantity} 題 / 共 ${availableWords} 題`;
         }
         
         function switchQuizCategory(cat) {
             currentCategory = cat;
-            quizWords = shuffle([...vocabulary[currentCategory]]);
+            
+            // Reset quantity to default
+            quizQuantity = 10;
+            document.getElementById('quantity-slider').value = 10;
+            
+            const allWords = shuffle([...vocabulary[currentCategory]]);
+            quizWords = allWords.slice(0, quizQuantity);
             quizScore = 0;
-            document.getElementById('quiz-score').textContent = '⭐ 0';
+            document.getElementById('quiz-score').textContent = `⭐ 0 / ${quizQuantity}`;
             document.getElementById('quiz-tabs').innerHTML = getCategories().map(c => 
                 `<button class="category-tab ${c === currentCategory ? 'active' : ''}" onclick="switchQuizCategory('${c}')">${c}</button>`
             ).join('');
+            
+            // Update slider visibility and values
+            const isLearningCategory = currentCategory.includes('學中文') || currentCategory.includes('學英文');
+            document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
+            const availableWords = vocabulary[currentCategory].length;
+            document.getElementById('quantity-slider').max = Math.min(20, availableWords);
+            document.getElementById('quantity-display').textContent = `${quizQuantity} 題 / 共 ${availableWords} 題`;
+            
             renderQuiz();
         }
         
@@ -471,7 +564,9 @@
             if (ans === correct) {
                 btn.classList.add('correct');
                 quizScore++;
-                document.getElementById('quiz-score').textContent = '⭐ ' + quizScore;
+                const total = quizQuantity;
+                const current = quizScore;
+                document.getElementById('quiz-score').textContent = `⭐ ${current} / ${total}`;
                 const encourages = ['勁呀！🎉', '叻叻猪！🐷', '好叻呀！⭐'];
                 document.getElementById('quiz-encourage').textContent = encourages[Math.floor(Math.random() * encourages.length)];
                 setTimeout(renderQuiz, 1200);
