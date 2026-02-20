@@ -156,7 +156,7 @@
                     <span>📊 睇幾多題？</span>
                     <span id="fc-quantity-display">10 題</span>
                 </div>
-                <input type="range" id="fc-quantity-slider" class="quantity-slider" min="1" max="10" value="10" onchange="updateFcQuantity(this.value)">
+                <input type="range" id="fc-quantity-slider" class="quantity-slider" min="1" max="100" value="10" onchange="updateFcQuantity(this.value)">
                 <div style="text-align:center;margin-top:15px;">
                     <button class="back-btn" onclick="startFlashcards()">✅ 開始 🃏</button>
                 </div>
@@ -392,7 +392,7 @@
             if (isLearningCategory) {
                 const availableWords = vocabulary[currentCategory].length;
                 const slider = document.getElementById('fc-quantity-slider');
-                slider.max = Math.min(10, availableWords);
+                slider.max = Math.min(100, availableWords);
                 if (fcQuantity > availableWords) fcQuantity = availableWords;
                 slider.value = fcQuantity;
                 document.getElementById('fc-quantity-display').textContent = `${fcQuantity} 題 / 共 ${availableWords} 題`;
