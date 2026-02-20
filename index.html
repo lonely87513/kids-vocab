@@ -61,20 +61,34 @@
             color: white; 
             border: none; 
             border-radius: 50%; 
-            width: 40px; 
-            height: 40px; 
-            font-size: 1.2em; 
+            width: 35px; 
+            height: 35px; 
+            font-size: 1em; 
             cursor: pointer; 
             display: inline-flex; 
             align-items: center; 
             justify-content: center; 
-            margin-left: 10px;
+            margin-left: 8px;
             transition: all 0.3s;
-            vertical-align: middle;
+            flex-shrink: 0;
         }
         .speak-btn:hover { transform: scale(1.1); background: #764ba2; }
-        .card-back { text-align: center; padding: 10px; }
-        .word-text { display: inline-block; vertical-align: middle; }
+        .card-back { 
+            text-align: center; 
+            padding: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 5px;
+        }
+        .word-row { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .word-text { font-size: 1.5em; font-weight: bold; }
+        .word-english { font-size: 0.8em; color: #666; }
         .quiz-speak-btn {
             padding: 10px 20px;
             font-size: 1.2em;
@@ -453,17 +467,21 @@
                 document.getElementById('fc-container').innerHTML = `
                     <div class="card card-front"><div style="font-size:${emojiSize}">${showEmoji ? word.emoji : ""}</div></div>
                     <div class="card card-back">
-                        <button class="speak-btn" onclick="speakText('${word.english}', 'en')">🔊</button>
-                        <div style="font-size:1.8em;font-weight:bold">${word.english}</div>
+                        <div class="word-row">
+                            <span class="word-text">${word.english}</span>
+                            <button class="speak-btn" onclick="speakText('${word.english}', 'en')">🔊</button>
+                        </div>
                     </div>
                 `;
             } else {
                 document.getElementById('fc-container').innerHTML = `
                     <div class="card card-front"><div style="font-size:${emojiSize}">${showEmoji ? word.emoji : ""}</div></div>
                     <div class="card card-back">
-                        <button class="speak-btn" onclick="speakText('${word.chinese}', 'zh-HK')">🔊</button>
-                        <div style="font-size:1.8em;font-weight:bold">${word.chinese}</div>
-                        <div style="font-size:0.6em;color:#666">${word.english}</div>
+                        <div class="word-row">
+                            <span class="word-text">${word.chinese}</span>
+                            <button class="speak-btn" onclick="speakText('${word.chinese}', 'zh-HK')">🔊</button>
+                        </div>
+                        <div class="word-english">${word.english}</div>
                     </div>
                 `;
             }
