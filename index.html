@@ -51,12 +51,6 @@
         .matching-card:hover { transform: scale(1.05); }
         .matching-card.selected { border: 3px solid #667eea; }
         .matching-card.matched { opacity: 0; pointer-events: none; }
-        .matching-card .speak-icon {
-            font-size: 0.6em;
-            opacity: 0.7;
-            margin-left: 5px;
-        }
-        .matching-card:hover .speak-icon { opacity: 1; }
         
         .add-word-form { display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto; }
         .add-word-form input { padding: 15px; font-size: 1.2em; border: 2px solid #ddd; border-radius: 10px; }
@@ -591,55 +585,43 @@
             
             const words = shuffle([...vocabulary[currentCategory]]).slice(0, 4);
             const pairs = [];
-            const isEnglish = currentCategory.includes('學英文');
-            
-            const emojiPairs = {
-                'one': ['1️⃣', '①'], 'two': ['2️⃣', '②'], 'three': ['3️⃣', '③'],
-                'four': ['4️⃣', '④'], 'five': ['5️⃣', '⑤'], 'six': ['6️⃣', '⑥'],
-                'seven': ['7️⃣', '⑦'], 'eight': ['8️⃣', '⑧'], 'nine': ['9️⃣', '⑨'],
-                'ten': ['🔟', '⑩'], 'cat': ['🐱', '😺'], 'dog': ['🐶', '🐕'],
-                'bird': ['🐦', '🐥'], 'fish': ['🐟', '🐠'], 'rabbit': ['🐰', '🐇'],
-                'father': ['👨', '👦'], 'mother': ['👩', '👧'], 'run': ['🏃', '💨'],
-                'swim': ['🏊', '🌊'], 'fly': ['✈️', '🪰']
-            };
             
             words.forEach((w, i) => {
-                if (isEnglish) {
-                    const emojis = emojiPairs[w.english] || [w.emoji, '❓'];
-                    pairs.push({ type: 'emoji', content: emojis[0], id: 'e' + i, matchId: 'e' + i + '_pair' });
-                    pairs.push({ type: 'emoji', content: emojis[1], id: 'e' + i + '_pair', matchId: 'e' + i });
-                } else {
-                    pairs.push({ type: 'emoji', content: w.emoji, id: 'e' + i, matchId: 'c' + i });
-                    pairs.push({ type: 'text', content: w.chinese, id: 'c' + i, matchId: 'e' + i });
-                }
+                // Chinese card with Cantonese speak
+                pairs.push({ 
+                    type: 'chinese', 
+                    content: w.chinese, 
+                    id: 'zh' + i, 
+                    matchId: 'en' + i,
+                    lang: 'zh-HK'
+                });
+                // English card with English speak
+                pairs.push({ 
+                    type: 'english', 
+                    content: w.english, 
+                    id: 'en' + i, 
+                    matchId: 'zh' + i,
+                    lang: 'en'
+                });
             });
             
             const shuffled = shuffle(pairs);
             document.getElementById('match-score').textContent = '⭐ ' + matchScore;
             document.getElementById('match-grid').innerHTML = shuffled.map((p, idx) => {
-                const bgColor = idx % 2 === 0 ? '#FFE66D' : '#4ECDC4';
-                const isText = p.type === 'text';
-                const speakAttr = isText ? `onclick="event.stopPropagation(); speakMatchText('${p.content}', '${isEnglish ? 'en' : 'zh-HK'}')"` : '';
-                const speakIcon = isText ? '<span class="speak-icon">🔊</span>' : '';
+                const bgColor = p.type === 'chinese' ? '#FF9A9E' : '#A8EDEA';
                 return `<div class="matching-card" style="background:${bgColor}" 
-                     data-id="${p.id}" data-mid="${p.matchId}" onclick="selectMatch(this)" ${speakAttr}>
-                     ${p.content}${speakIcon}</div>`;
+                     data-id="${p.id}" data-mid="${p.matchId}" onclick="selectMatch(this)">
+                     ${p.content} 🔊
+                </div>`;
             }).join('');
         }
         
-        // Speak text for matching game
-        function speakMatchText(text, lang) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = lang;
-                utterance.rate = 0.8;
-                utterance.pitch = 1.1;
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-        
         function selectMatch(card) {
+            // First speak the text
+            const text = card.textContent.replace(' 🔊', '');
+            const lang = card.style.background.includes('FF9A9E') ? 'zh-HK' : 'en';
+            speakMatchText(text, lang);
+            
             if (card.classList.contains('matched')) return;
             if (!selectedMatch) {
                 selectedMatch = card;
@@ -663,6 +645,18 @@
                     selectedMatch = card;
                     card.classList.add('selected');
                 }
+            }
+        }
+        
+        // Speak text for matching game
+        function speakMatchText(text, lang) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.rate = 0.8;
+                utterance.pitch = 1.1;
+                window.speechSynthesis.speak(utterance);
             }
         }
         
