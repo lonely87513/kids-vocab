@@ -57,24 +57,24 @@
         .add-word-form button { padding: 15px; font-size: 1.3em; border: none; border-radius: 10px; background: #4ECDC4; color: white; cursor: pointer; }
         
         .speak-btn { 
-            position: absolute; 
-            top: 10px; 
-            right: 10px; 
             background: #667eea; 
             color: white; 
             border: none; 
             border-radius: 50%; 
-            width: 50px; 
-            height: 50px; 
-            font-size: 1.5em; 
+            width: 40px; 
+            height: 40px; 
+            font-size: 1.2em; 
             cursor: pointer; 
-            display: flex; 
+            display: inline-flex; 
             align-items: center; 
             justify-content: center; 
+            margin-left: 10px;
             transition: all 0.3s;
+            vertical-align: middle;
         }
         .speak-btn:hover { transform: scale(1.1); background: #764ba2; }
-        .card-back { position: relative; }
+        .card-back { text-align: center; padding: 10px; }
+        .word-text { display: inline-block; vertical-align: middle; }
         .quiz-speak-btn {
             padding: 10px 20px;
             font-size: 1.2em;
