@@ -149,6 +149,19 @@
         <div id="flashcards" class="game-area">
             <h2 style="text-align: center; color: #667eea;">🃏 認字卡</h2>
             <div class="category-tabs" id="fc-tabs"></div>
+            
+            <!-- Quantity Slider for 學中文 & 學英文 -->
+            <div id="fc-quantity-control" class="quantity-control" style="display:none;">
+                <div class="quantity-label">
+                    <span>📊 睇幾多題？</span>
+                    <span id="fc-quantity-display">10 題</span>
+                </div>
+                <input type="range" id="fc-quantity-slider" class="quantity-slider" min="1" max="10" value="10" onchange="updateFcQuantity(this.value)">
+                <div style="text-align:center;margin-top:15px;">
+                    <button class="back-btn" onclick="startFlashcards()">✅ 開始 🃏</button>
+                </div>
+            </div>
+            
             <div style="text-align: center; margin: 15px 0;">
                 <button id="emoji-toggle" onclick="toggleEmoji()" style="padding: 10px 20px; font-size: 1em; border: none; border-radius: 10px; cursor: pointer; background: #FFE66D; color: #333;">👁️ 隱藏 Emoji</button>
             </div>
@@ -361,6 +374,7 @@
         let selectedMatch = null;
         let showEmoji = true;
         let quizQuantity = 10; // Default 10 questions
+        let fcQuantity = 10; // Flashcards quantity
         
         // Shuffle function
         function shuffle(array) {
@@ -388,19 +402,53 @@
             document.getElementById('fc-tabs').innerHTML = getCategories().map(cat => 
                 `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" onclick="switchCategory('${cat}')">${cat}</button>`
             ).join('');
-            flashcardWords = shuffle([...vocabulary[currentCategory]]);
+            
+            // Check if showing quantity control
+            const isLearningCategory = currentCategory.includes('學中文') || currentCategory.includes('學英文');
+            document.getElementById('fc-quantity-control').style.display = isLearningCategory ? 'block' : 'none';
+            
+            // Show quantity slider only for learning categories
+            if (isLearningCategory) {
+                const availableWords = vocabulary[currentCategory].length;
+                const slider = document.getElementById('fc-quantity-slider');
+                slider.max = Math.min(10, availableWords);
+                if (fcQuantity > availableWords) fcQuantity = availableWords;
+                slider.value = fcQuantity;
+                document.getElementById('fc-quantity-display').textContent = `${fcQuantity} 題 / 共 ${availableWords} 題`;
+                
+                // Hide cards and progress when quantity selector is shown
+                document.getElementById('fc-container').innerHTML = '<div style="text-align:center;color:#667eea;font-size:1.5em;padding:50px;">👇 設定題目數量後按「開始」🃏</div>';
+                document.getElementById('fc-progress').style.width = '0%';
+                document.getElementById('fc-progress').textContent = '0/0';
+            } else {
+                // For other categories, show all cards
+                fcQuantity = vocabulary[currentCategory].length;
+                flashcardWords = shuffle([...vocabulary[currentCategory]]);
+                currentCard = 0;
+                renderCard();
+            }
+        }
+        
+        // Update flashcards quantity
+        function updateFcQuantity(value) {
+            fcQuantity = parseInt(value);
+            const availableWords = vocabulary[currentCategory].length;
+            document.getElementById('fc-quantity-display').textContent = `${fcQuantity} 題 / 共 ${availableWords} 題`;
+        }
+        
+        // Start flashcards with selected quantity
+        function startFlashcards() {
+            const allWords = shuffle([...vocabulary[currentCategory]]);
+            flashcardWords = allWords.slice(0, fcQuantity);
             currentCard = 0;
             renderCard();
         }
         
         function switchCategory(cat) {
             currentCategory = cat;
-            flashcardWords = shuffle([...vocabulary[currentCategory]]);
-            currentCard = 0;
-            renderCard();
-            document.getElementById('fc-tabs').innerHTML = getCategories().map(c => 
-                `<button class="category-tab ${c === currentCategory ? 'active' : ''}" onclick="switchCategory('${c}')">${c}</button>`
-            ).join('');
+            fcQuantity = 10; // Reset to default
+            document.getElementById('fc-quantity-slider').value = 10;
+            initFlashcards();
         }
         
         function toggleEmoji() {
