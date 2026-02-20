@@ -624,42 +624,53 @@
             
             const words = shuffle([...vocabulary[currentCategory]]).slice(0, 4);
             const pairs = [];
+            const isEnglish = currentCategory.includes('K2第二段英文');
             
             words.forEach((w, i) => {
-                // Chinese card with Cantonese speak
+                const text = isEnglish ? w.english : w.chinese;
+                const lang = isEnglish ? 'en' : 'zh-HK';
+                
+                // Text card
                 pairs.push({ 
-                    type: 'chinese', 
-                    content: w.chinese, 
-                    id: 'zh' + i, 
-                    matchId: 'en' + i,
-                    lang: 'zh-HK'
+                    type: 'text', 
+                    content: text, 
+                    id: 'txt' + i, 
+                    matchId: 'snd' + i,
+                    lang: lang
                 });
-                // English card with English speak
+                // Audio card (🔊)
                 pairs.push({ 
-                    type: 'english', 
-                    content: w.english, 
-                    id: 'en' + i, 
-                    matchId: 'zh' + i,
-                    lang: 'en'
+                    type: 'audio', 
+                    content: '🔊', 
+                    id: 'snd' + i, 
+                    matchId: 'txt' + i,
+                    lang: lang
                 });
             });
             
             const shuffled = shuffle(pairs);
             document.getElementById('match-score').textContent = '⭐ ' + matchScore;
             document.getElementById('match-grid').innerHTML = shuffled.map((p, idx) => {
-                const bgColor = p.type === 'chinese' ? '#FF9A9E' : '#A8EDEA';
-                return `<div class="matching-card" style="background:${bgColor}" 
-                     data-id="${p.id}" data-mid="${p.matchId}" onclick="selectMatch(this)">
-                     ${p.content} 🔊
+                const bgColor = p.type === 'text' ? '#FF9A9E' : '#FFE66D';
+                const fontSize = p.type === 'text' ? '1.5em' : '3em';
+                return `<div class="matching-card" style="background:${bgColor};font-size:${fontSize}" 
+                     data-id="${p.id}" data-mid="${p.matchId}" data-lang="${p.lang}" onclick="selectMatch(this)">
+                     ${p.content}
                 </div>`;
             }).join('');
         }
         
         function selectMatch(card) {
-            // First speak the text
-            const text = card.textContent.replace(' 🔊', '');
-            const lang = card.style.background.includes('FF9A9E') ? 'zh-HK' : 'en';
-            speakMatchText(text, lang);
+            // Play audio if it's an audio card
+            if (card.textContent === '🔊') {
+                const lang = card.dataset.lang;
+                // Find the matching text card to get the word
+                const textCardId = card.dataset.mid;
+                const textCard = document.querySelector(`[data-id="${textCardId}"]`);
+                if (textCard) {
+                    speakMatchText(textCard.textContent, lang);
+                }
+            }
             
             if (card.classList.contains('matched')) return;
             if (!selectedMatch) {
