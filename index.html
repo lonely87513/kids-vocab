@@ -198,7 +198,7 @@
                     <span>📊 題目數量</span>
                     <span id="quantity-display">10 題</span>
                 </div>
-                <input type="range" id="quantity-slider" class="quantity-slider" min="1" max="20" value="10" onchange="updateQuantity(this.value)">
+                <input type="range" id="quantity-slider" class="quantity-slider" min="1" max="100" value="10" onchange="updateQuantity(this.value)">
             </div>
             
             <div class="score" id="quiz-score">⭐ 0</div>
@@ -341,7 +341,39 @@
                 { chinese: '媽媽', emoji: '👩', english: 'mother' },
                 { chinese: '跑', emoji: '🏃', english: 'run' },
                 { chinese: '游水', emoji: '🏊', english: 'swim' },
-                { chinese: '飛', emoji: '✈️', english: 'fly' }
+                { chinese: '飛', emoji: '✈️', english: 'fly' },
+                // New words from image (2026-02-21)
+                { chinese: '七', emoji: '7️⃣', english: 'seven' },
+                { chinese: '八', emoji: '8️⃣', english: 'eight' },
+                { chinese: '九', emoji: '9️⃣', english: 'nine' },
+                { chinese: '十', emoji: '🔟', english: 'ten' },
+                { chinese: '零', emoji: '0️⃣', english: 'zero' },
+                { chinese: '蜘蛛', emoji: '🕷️', english: 'spider' },
+                { chinese: '蛇', emoji: '🐍', english: 'snake' },
+                { chinese: '烏龜', emoji: '🐢', english: 'turtle' },
+                { chinese: '倉鼠', emoji: '🐹', english: 'hamster' },
+                { chinese: '變色龍', emoji: '🦎', english: 'chameleon' },
+                { chinese: '哥哥', emoji: '👦', english: 'brother' },
+                { chinese: '姐姐', emoji: '👧', english: 'sister' },
+                { chinese: '爺爺', emoji: '👴', english: 'grandfather' },
+                { chinese: '婆婆', emoji: '👵', english: 'grandmother' },
+                { chinese: '跳', emoji: '🦘', english: 'jump' },
+                { chinese: '睇', emoji: '👀', english: 'see' },
+                { chinese: '鍾意', emoji: '❤️', english: 'like' },
+                { chinese: '高', emoji: '📏', english: 'tall' },
+                { chinese: '矮', emoji: '📏', english: 'short' },
+                { chinese: '快', emoji: '⚡', english: 'fast' },
+                { chinese: '慢', emoji: '🐢', english: 'slow' },
+                { chinese: '我', emoji: '🙋', english: 'I' },
+                { chinese: '係', emoji: '✔️', english: 'am' },
+                { chinese: '佢', emoji: '❓', english: 'it' },
+                { chinese: '係', emoji: '✔️', english: 'is' },
+                { chinese: '一', emoji: '1️⃣', english: 'a' },
+                { chinese: '一個', emoji: '1️⃣', english: 'an' },
+                { chinese: '嗰個', emoji: '📌', english: 'the' },
+                { chinese: '我', emoji: '🙋', english: 'me' },
+                { chinese: '我哋', emoji: '👯', english: 'we' },
+                { chinese: '可以', emoji: '✅', english: 'can' }
             ]
         };
         
@@ -509,7 +541,7 @@
             // Update slider max based on available words
             const availableWords = vocabulary[currentCategory].length;
             const slider = document.getElementById('quantity-slider');
-            slider.max = Math.min(20, availableWords);
+            slider.max = Math.min(100, availableWords);
             if (quizQuantity > availableWords) {
                 quizQuantity = availableWords;
                 slider.value = quizQuantity;
@@ -554,7 +586,7 @@
             const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第二段英文');
             document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             const availableWords = vocabulary[currentCategory].length;
-            document.getElementById('quantity-slider').max = Math.min(20, availableWords);
+            document.getElementById('quantity-slider').max = Math.min(100, availableWords);
             document.getElementById('quantity-display').textContent = `${quizQuantity} 題 / 共 ${availableWords} 題`;
             
             renderQuiz();
