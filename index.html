@@ -181,9 +181,15 @@
             </div>
             <div class="progress-bar"><div class="progress-fill" id="fc-progress" style="width: 0%">0/0</div></div>
             <div class="card-container" id="fc-container"></div>
-            <div style="text-align: center;">
-                <button class="back-btn" onclick="prevCard()">⬅️</button>
-                <button class="back-btn" onclick="nextCard()">➡️</button>
+            <div style="text-align: center; margin-top: 20px;">
+                <div id="fc-score" style="font-size: 1.2em; margin-bottom: 15px; color: #667eea;">✅ 0 | ❌ 0</div>
+                <div id="fc-buttons">
+                    <button class="back-btn" style="background: #FF6B6B; font-size: 1.5em; padding: 15px 30px;" onclick="markWrong()">❌</button>
+                    <button class="back-btn" style="background: #4ECDC4; font-size: 1.5em; padding: 15px 30px;" onclick="markCorrect()">✅</button>
+                </div>
+                <div id="fc-review-btn" style="display: none; margin-top: 15px;">
+                    <button class="back-btn" style="background: #FFE66D; color: #333; font-size: 1.2em; padding: 15px 30px;" onclick="reviewWrongCards()">📝 查看錯題 (0)</button>
+                </div>
             </div>
         </div>
         
@@ -388,6 +394,11 @@
         let showEmoji = true;
         let quizQuantity = 10; // Default 10 questions
         let fcQuantity = 10; // Flashcards quantity
+        // Flashcard quiz tracking
+        let fcCorrect = 0;
+        let fcWrong = 0;
+        let fcWrongList = [];
+        let fcStarted = false;
         
         // Shuffle function
         function shuffle(array) {
@@ -415,6 +426,11 @@
             document.getElementById('fc-tabs').innerHTML = getCategories().map(cat => 
                 `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" onclick="switchCategory('${cat}')">${cat}</button>`
             ).join('');
+            
+            // Reset score display
+            document.getElementById('fc-score').textContent = '✅ 0 | ❌ 0';
+            document.getElementById('fc-buttons').style.display = 'block';
+            document.getElementById('fc-review-btn').style.display = 'none';
             
             // Check if showing quantity control
             const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第二段英文');
@@ -454,12 +470,19 @@
             const allWords = shuffle([...vocabulary[currentCategory]]);
             flashcardWords = allWords.slice(0, fcQuantity);
             currentCard = 0;
+            fcCorrect = 0;
+            fcWrong = 0;
+            fcWrongList = [];
+            fcStarted = true;
+            document.getElementById('fc-buttons').style.display = 'block';
+            document.getElementById('fc-review-btn').style.display = 'none';
             renderCard();
         }
         
         function switchCategory(cat) {
             currentCategory = cat;
             fcQuantity = 10; // Reset to default
+            fcStarted = false;
             document.getElementById('fc-quantity-slider').value = 10;
             initFlashcards();
         }
@@ -529,6 +552,81 @@
             }
         }
         
+        function markCorrect() {
+            if (!fcStarted || currentCard >= flashcardWords.length) return;
+            fcCorrect++;
+            document.getElementById('fc-score').textContent = `✅ ${fcCorrect} | ❌ ${fcWrong}`;
+            goToNextCard();
+        }
+        
+        function markWrong() {
+            if (!fcStarted || currentCard >= flashcardWords.length) return;
+            fcWrong++;
+            fcWrongList.push(flashcardWords[currentCard]);
+            document.getElementById('fc-score').textContent = `✅ ${fcCorrect} | ❌ ${fcWrong}`;
+            document.getElementById('fc-review-btn').innerHTML = `📝 查看錯題 (${fcWrong})`;
+            goToNextCard();
+        }
+        
+        function goToNextCard() {
+            if (currentCard < flashcardWords.length - 1) {
+                currentCard++;
+                renderCard();
+            } else {
+                // Finished all cards
+                showFinishScreen();
+            }
+        }
+        
+        function showFinishScreen() {
+            const isEnglish = currentCategory.includes('K2第二段英文');
+            const finishMsg = fcWrong === 0 
+                ? '🎉 全部答啱喇！'
+                : `📝 完成！對咗 ${fcCorrect} 題 / 錯咗 ${fcWrong} 題`;
+            
+            document.getElementById('fc-buttons').style.display = 'none';
+            document.getElementById('fc-progress').style.width = '100%';
+            document.getElementById('fc-progress').textContent = '完成！';
+            
+            if (isEnglish) {
+                document.getElementById('fc-container').innerHTML = `
+                    <div style="text-align:center;padding:30px;">
+                        <div style="font-size:3em;margin-bottom:20px;">${fcWrong === 0 ? '🎉' : '💪'}</div>
+                        <div style="font-size:1.5em;color:#667eea;margin-bottom:20px;">${finishMsg}</div>
+                        ${fcWrong > 0 ? `<button onclick="reviewWrongCards()" style="padding:15px 30px;font-size:1.2em;background:#FFE66D;border:none;border-radius:15px;cursor:pointer;">📝 查看錯題 (${fcWrong})</button>` : ''}
+                        <div style="margin-top:30px;">
+                            <button onclick="startFlashcards()" style="padding:15px 30px;font-size:1.2em;background:#4ECDC4;border:none;border-radius:15px;cursor:pointer;color:white;margin:5px;">🔄 再試一次</button>
+                            <button onclick="initFlashcards()" style="padding:15px 30px;font-size:1.2em;background:#667eea;border:none;border-radius:15px;cursor:pointer;color:white;margin:5px;">🏠 返去選單</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('fc-container').innerHTML = `
+                    <div style="text-align:center;padding:30px;">
+                        <div style="font-size:3em;margin-bottom:20px;">${fcWrong === 0 ? '🎉' : '💪'}</div>
+                        <div style="font-size:1.5em;color:#667eea;margin-bottom:20px;">${finishMsg}</div>
+                        ${fcWrong > 0 ? `<button onclick="reviewWrongCards()" style="padding:15px 30px;font-size:1.2em;background:#FFE66D;border:none;border-radius:15px;cursor:pointer;">📝 查看錯題 (${fcWrong})</button>` : ''}
+                        <div style="margin-top:30px;">
+                            <button onclick="startFlashcards()" style="padding:15px 30px;font-size:1.2em;background:#4ECDC4;border:none;border-radius:15px;cursor:pointer;color:white;margin:5px;">🔄 再試一次</button>
+                            <button onclick="initFlashcards()" style="padding:15px 30px;font-size:1.2em;background:#667eea;border:none;border-radius:15px;cursor:pointer;color:white;margin:5px;">🏠 返去選單</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function reviewWrongCards() {
+            if (fcWrongList.length === 0) return;
+            flashcardWords = [...fcWrongList];
+            currentCard = 0;
+            fcStarted = true;
+            document.getElementById('fc-buttons').style.display = 'block';
+            document.getElementById('fc-review-btn').style.display = 'none';
+            document.getElementById('fc-score').textContent = `✅ 0 | ❌ 0 (溫習緊)`;
+            renderCard();
+        }
+        
+        // Old navigation functions (kept for compatibility)
         function prevCard() { if (currentCard > 0) { currentCard--; renderCard(); } }
         function nextCard() { if (currentCard < flashcardWords.length - 1) { currentCard++; renderCard(); } }
         
