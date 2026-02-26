@@ -615,7 +615,8 @@
                     <div style="font-size:1.5em;color:#667eea;margin-bottom:20px;">${finishMsg}</div>
                     ${wrongCardsHtml}
                     <div style="margin-top:30px;">
-                        <button onclick="startFlashcards()" style="padding:15px 30px;font-size:1.2em;background:#4ECDC4;border:none;border-radius:15px;cursor:pointer;color:white;margin:5px;">🔄 再試一次</button>
+                        ${fcWrong > 0 ? `<button onclick="reviewWrongCards()" style="padding:15px 30px;font-size:1.2em;background:#FFE66D;border:none;border-radius:15px;cursor:pointer;color:#333;margin:5px;">🔄 再試一次 (${fcWrong}題)</button>` : ''}
+                        <button onclick="startFlashcards()" style="padding:15px 30px;font-size:1.2em;background:#4ECDC4;border:none;border-radius:15px;cursor:pointer;color:white;margin:5px;">🔁再做全部</button>
                         <button onclick="initFlashcards()" style="padding:15px 30px;font-size:1.2em;background:#667eea;border:none;border-radius:15px;cursor:pointer;color:white;margin:5px;">🏠 返去選單</button>
                     </div>
                 </div>
@@ -626,10 +627,13 @@
             if (fcWrongList.length === 0) return;
             flashcardWords = [...fcWrongList];
             currentCard = 0;
+            fcCorrect = 0;
+            fcWrong = 0;
+            fcWrongList = [];
             fcStarted = true;
             document.getElementById('fc-buttons').style.display = 'block';
-            document.getElementById('fc-review-btn').style.display = 'none';
-            document.getElementById('fc-score').textContent = `✅ 0 | ❌ 0 (溫習緊)`;
+            document.getElementById('fc-score').style.display = 'block';
+            document.getElementById('fc-score').textContent = `✅ 0 | ❌ 0 (溫習錯題)`;
             renderCard();
         }
         
