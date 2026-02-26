@@ -792,13 +792,13 @@
         
         function selectMatch(card) {
             // Play audio if it's an audio card
-            if (card.textContent === '🔊') {
+            if (card.textContent.trim() === '🔊') {
                 const lang = card.dataset.lang;
                 // Find the matching text card to get the word
                 const textCardId = card.dataset.mid;
                 const textCard = document.querySelector(`[data-id="${textCardId}"]`);
                 if (textCard) {
-                    speakMatchText(textCard.textContent, lang);
+                    speakMatchText(textCard.textContent.trim(), lang);
                 }
             }
             
