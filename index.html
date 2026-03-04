@@ -244,6 +244,29 @@
             window.speechSynthesis.getVoices();
         };
         
+        // Helper: Ensure voices are loaded before speaking (fixes Android)
+        function ensureVoicesLoaded() {
+            return new Promise((resolve) => {
+                let voices = window.speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                    resolve(voices);
+                    return;
+                }
+                // Android Chrome workaround: wait for voiceschanged
+                const onVoicesChanged = () => {
+                    voices = window.speechSynthesis.getVoices();
+                    window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
+                    resolve(voices);
+                };
+                window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged);
+                // Fallback timeout for Android
+                setTimeout(() => {
+                    window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
+                    resolve(window.speechSynthesis.getVoices());
+                }, 500);
+            });
+        }
+        
         // Vocabulary data
         const vocabulary = {
             '📚 K2第二段中文': [
@@ -529,10 +552,13 @@
         }
         
         // Speak text function
-        function speakText(text, lang) {
+        async function speakText(text, lang) {
             if ('speechSynthesis' in window) {
                 // Cancel any ongoing speech
                 window.speechSynthesis.cancel();
+                
+                // Wait for voices to load (fixes Android)
+                const voices = await ensureVoicesLoaded();
                 
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = lang;
@@ -540,7 +566,6 @@
                 utterance.pitch = 1.1; // Slightly higher pitch for friendliness
                 
                 // Try to find a Cantonese voice for zh-HK
-                const voices = window.speechSynthesis.getVoices();
                 if (lang === 'zh-HK') {
                     const cantoneseVoice = voices.find(v => v.lang.includes('zh-HK') || v.lang.includes('yue') || v.lang.includes('zh-CN'));
                     if (cantoneseVoice) utterance.voice = cantoneseVoice;
@@ -840,9 +865,11 @@
         }
         
         // Speak text for matching game
-        function speakMatchText(text, lang) {
+        async function speakMatchText(text, lang) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
+                // Wait for voices to load (fixes Android)
+                await ensureVoicesLoaded();
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = lang;
                 utterance.rate = 0.8;
