@@ -245,6 +245,20 @@
         };
         
         // Helper: Ensure voices are loaded before speaking (fixes Android)
+        // Pre-load voices on page load (Android Chrome workaround)
+        function preloadVoices() {
+            window.speechSynthesis.getVoices();
+            // Force multiple loads for Android
+            setTimeout(() => window.speechSynthesis.getVoices(), 100);
+            setTimeout(() => window.speechSynthesis.getVoices(), 300);
+            setTimeout(() => window.speechSynthesis.getVoices(), 600);
+        }
+        // Try to load voices early
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = preloadVoices;
+            preloadVoices();
+        }
+        
         function ensureVoicesLoaded() {
             return new Promise((resolve) => {
                 let voices = window.speechSynthesis.getVoices();
@@ -259,11 +273,11 @@
                     resolve(voices);
                 };
                 window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged);
-                // Fallback timeout for Android
+                // Fallback timeout for Android (longer)
                 setTimeout(() => {
                     window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
                     resolve(window.speechSynthesis.getVoices());
-                }, 500);
+                }, 1000);
             });
         }
         
@@ -554,24 +568,42 @@
         // Speak text function
         async function speakText(text, lang) {
             if ('speechSynthesis' in window) {
-                // Cancel any ongoing speech
-                window.speechSynthesis.cancel();
-                
-                // Wait for voices to load (fixes Android)
-                const voices = await ensureVoicesLoaded();
-                
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = lang;
-                utterance.rate = 0.8; // Slower for kids
-                utterance.pitch = 1.1; // Slightly higher pitch for friendliness
-                
-                // Try to find a Cantonese voice for zh-HK
-                if (lang === 'zh-HK') {
-                    const cantoneseVoice = voices.find(v => v.lang.includes('zh-HK') || v.lang.includes('yue') || v.lang.includes('zh-CN'));
-                    if (cantoneseVoice) utterance.voice = cantoneseVoice;
+                try {
+                    // Cancel any ongoing speech
+                    window.speechSynthesis.cancel();
+                    
+                    // Wait for voices to load (fixes Android)
+                    const voices = await ensureVoicesLoaded();
+                    
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    // Normalize lang code
+                    utterance.lang = lang === 'zh-HK' ? 'zh-CN' : lang;
+                    utterance.rate = 0.8; // Slower for kids
+                    utterance.pitch = 1.1; // Slightly higher pitch for friendliness
+                    
+                    // Try to find a Cantonese/Chinese voice for zh-HK
+                    if (lang === 'zh-HK' || lang === 'zh-CN') {
+                        const chineseVoice = voices.find(v => 
+                            v.lang.includes('zh-HK') || 
+                            v.lang.includes('yue') || 
+                            v.lang.includes('zh-CN') ||
+                            v.lang.includes('zh')
+                        );
+                        if (chineseVoice) {
+                            utterance.voice = chineseVoice;
+                            utterance.lang = chineseVoice.lang; // Use voice's lang
+                        }
+                    }
+                    
+                    // Add error handler
+                    utterance.onerror = function(e) {
+                        console.log('Speech error:', e);
+                    };
+                    
+                    window.speechSynthesis.speak(utterance);
+                } catch(e) {
+                    console.log('Speech error:', e);
                 }
-                
-                window.speechSynthesis.speak(utterance);
             } else {
                 alert('呢部機未支援語音功能 🤷');
             }
@@ -867,14 +899,34 @@
         // Speak text for matching game
         async function speakMatchText(text, lang) {
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                // Wait for voices to load (fixes Android)
-                await ensureVoicesLoaded();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = lang;
-                utterance.rate = 0.8;
-                utterance.pitch = 1.1;
-                window.speechSynthesis.speak(utterance);
+                try {
+                    window.speechSynthesis.cancel();
+                    // Wait for voices to load (fixes Android)
+                    const voices = await ensureVoicesLoaded();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    // Normalize lang code
+                    utterance.lang = lang === 'zh-HK' ? 'zh-CN' : lang;
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1.1;
+                    
+                    // Try to find Chinese voice
+                    if (lang === 'zh-HK' || lang === 'zh-CN') {
+                        const chineseVoice = voices.find(v => 
+                            v.lang.includes('zh-HK') || 
+                            v.lang.includes('yue') || 
+                            v.lang.includes('zh-CN') ||
+                            v.lang.includes('zh')
+                        );
+                        if (chineseVoice) {
+                            utterance.voice = chineseVoice;
+                            utterance.lang = chineseVoice.lang;
+                        }
+                    }
+                    
+                    window.speechSynthesis.speak(utterance);
+                } catch(e) {
+                    console.log('Speech error:', e);
+                }
             }
         }
         
