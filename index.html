@@ -159,7 +159,6 @@
             <button class="menu-btn btn-quiz" onclick="showGame('quiz')">❓ 估估吓</button>
             <button class="menu-btn btn-matching" onclick="showGame('matching')">🔗 配對</button>
             <button class="menu-btn btn-add" onclick="showGame('add')">➕ 加字詞</button>
-            <button class="menu-btn" style="background: #999; font-size: 0.8em;" onclick="debugVoices()">🔧 Debug</button>
         </div>
         
         <!-- Flashcards -->
@@ -249,11 +248,8 @@
         
         // Helper: Ensure voices are loaded before speaking (fixes Android)
         // Pre-load voices on page load (Android Chrome workaround)
-        let debugVoices = [];
         function preloadVoices() {
             const voices = window.speechSynthesis.getVoices();
-            debugVoices = voices;
-            console.log('Voices loaded:', voices.length, voices.map(v => v.name + '(' + v.lang + ')'));
             // Force multiple loads for Android
             setTimeout(() => window.speechSynthesis.getVoices(), 100);
             setTimeout(() => window.speechSynthesis.getVoices(), 300);
@@ -264,35 +260,6 @@
             window.speechSynthesis.onvoiceschanged = preloadVoices;
             preloadVoices();
         }
-        
-        // Debug: Show available voices (call from console or add button)
-        window.debugVoices = function() {
-            const voices = window.speechSynthesis.getVoices();
-            let msg = 'Voices: ' + voices.length + '\n';
-            if (voices.length === 0) {
-                msg += '(No voices loaded!)\n';
-                // Try to trigger loading
-                window.speechSynthesis.speak(new SpeechSynthesisUtterance('test'));
-                setTimeout(() => debugVoices(), 500);
-            } else {
-                msg += voices.map(v => v.name + '(' + v.lang + ')').join('\n');
-            }
-            alert(msg);
-            // Also try a test speak
-            const test = new SpeechSynthesisUtterance('Hello');
-            test.lang = 'en';
-            window.speechSynthesis.speak(test);
-        };
-        
-        // Auto-test speech on load
-        window.testSpeech = function() {
-            setTimeout(() => {
-                alert('Testing speech...\nCheck if you heard anything.');
-                const test = new SpeechSynthesisUtterance('測試');
-                test.lang = 'zh-CN';
-                window.speechSynthesis.speak(test);
-            }, 1000);
-        };
         
         function ensureVoicesLoaded() {
             return new Promise((resolve) => {
