@@ -609,23 +609,36 @@
                     const voices = await ensureVoicesLoaded();
                     
                     const utterance = new SpeechSynthesisUtterance(text);
-                    // Normalize lang code
-                    utterance.lang = lang === 'zh-HK' ? 'zh-CN' : lang;
                     utterance.rate = 0.8; // Slower for kids
                     utterance.pitch = 1.1; // Slightly higher pitch for friendliness
                     
-                    // Try to find a Cantonese/Chinese voice for zh-HK
+                    // For Chinese, try multiple approaches
                     if (lang === 'zh-HK' || lang === 'zh-CN') {
+                        // Try to find any Chinese voice
                         const chineseVoice = voices.find(v => 
                             v.lang.includes('zh-HK') || 
                             v.lang.includes('yue') || 
                             v.lang.includes('zh-CN') ||
-                            v.lang.includes('zh')
+                            v.lang.includes('zh-TW') ||
+                            v.lang.includes('zh') ||
+                            v.lang.includes('cmn')
                         );
+                        
                         if (chineseVoice) {
                             utterance.voice = chineseVoice;
-                            utterance.lang = chineseVoice.lang; // Use voice's lang
+                            utterance.lang = chineseVoice.lang;
+                        } else {
+                            // No Chinese voice? Try default and remove lang restriction
+                            console.log('No Chinese voice found, using default');
+                            utterance.lang = ''; // Let system decide
                         }
+                    } else {
+                        // For English, try to find English voice
+                        const englishVoice = voices.find(v => v.lang.includes('en'));
+                        if (englishVoice) {
+                            utterance.voice = englishVoice;
+                        }
+                        utterance.lang = lang;
                     }
                     
                     // Add error handler
@@ -937,23 +950,31 @@
                     // Wait for voices to load (fixes Android)
                     const voices = await ensureVoicesLoaded();
                     const utterance = new SpeechSynthesisUtterance(text);
-                    // Normalize lang code
-                    utterance.lang = lang === 'zh-HK' ? 'zh-CN' : lang;
                     utterance.rate = 0.8;
                     utterance.pitch = 1.1;
                     
-                    // Try to find Chinese voice
+                    // For Chinese, try multiple approaches
                     if (lang === 'zh-HK' || lang === 'zh-CN') {
                         const chineseVoice = voices.find(v => 
                             v.lang.includes('zh-HK') || 
                             v.lang.includes('yue') || 
                             v.lang.includes('zh-CN') ||
-                            v.lang.includes('zh')
+                            v.lang.includes('zh-TW') ||
+                            v.lang.includes('zh') ||
+                            v.lang.includes('cmn')
                         );
+                        
                         if (chineseVoice) {
                             utterance.voice = chineseVoice;
                             utterance.lang = chineseVoice.lang;
+                        } else {
+                            // No Chinese voice? Try default
+                            utterance.lang = '';
                         }
+                    } else {
+                        const englishVoice = voices.find(v => v.lang.includes('en'));
+                        if (englishVoice) utterance.voice = englishVoice;
+                        utterance.lang = lang;
                     }
                     
                     window.speechSynthesis.speak(utterance);
