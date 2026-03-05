@@ -2,11 +2,13 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🎮 孖寶學字詞 - 5歲小朋友</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Comic Sans MS", "Microsoft JhengHei", sans-serif; }
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        /* Disable touch zoom and double-tap zoom */
+        html, body { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; touch-action: manipulation; }
         .container { max-width: 800px; margin: 0 auto; }
         h1 { text-align: center; color: #fff; font-size: 2.5em; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
         
