@@ -581,25 +581,43 @@
                     utterance.rate = 0.8; // Slower for kids
                     utterance.pitch = 1.1; // Slightly higher pitch for friendliness
                     
-                    // For Chinese, try multiple approaches
+                    // For Chinese, prioritize Cantonese (粵語) over Mandarin
                     if (lang === 'zh-HK' || lang === 'zh-CN') {
-                        // Try to find any Chinese voice
-                        const chineseVoice = voices.find(v => 
-                            v.lang.includes('zh-HK') || 
-                            v.lang.includes('yue') || 
-                            v.lang.includes('zh-CN') ||
-                            v.lang.includes('zh-TW') ||
-                            v.lang.includes('zh') ||
-                            v.lang.includes('cmn')
-                        );
+                        // Priority: yue > zh-HK > Cantonese > zh-CN > others
+                        let chineseVoice = null;
+                        
+                        // First: try yue (Cantonese code)
+                        chineseVoice = voices.find(v => v.lang.includes('yue'));
+                        
+                        // Second: try zh-HK
+                        if (!chineseVoice) {
+                            chineseVoice = voices.find(v => v.lang.includes('zh-HK'));
+                        }
+                        
+                        // Third: try Cantonese in name
+                        if (!chineseVoice) {
+                            chineseVoice = voices.find(v => v.name.toLowerCase().includes('cantonese'));
+                        }
+                        
+                        // Fourth: try zh-CN but ONLY if no Cantonese found
+                        if (!chineseVoice) {
+                            chineseVoice = voices.find(v => v.lang.includes('zh-CN'));
+                        }
+                        
+                        // Fifth: any Chinese voice
+                        if (!chineseVoice) {
+                            chineseVoice = voices.find(v => 
+                                v.lang.includes('zh') || v.lang.includes('cmn')
+                            );
+                        }
                         
                         if (chineseVoice) {
                             utterance.voice = chineseVoice;
                             utterance.lang = chineseVoice.lang;
+                            console.log('Using voice:', chineseVoice.name, chineseVoice.lang);
                         } else {
-                            // No Chinese voice? Try default and remove lang restriction
-                            console.log('No Chinese voice found, using default');
-                            utterance.lang = ''; // Let system decide
+                            console.log('No Chinese voice found');
+                            utterance.lang = 'zh-HK'; // Force Cantonese
                         }
                     } else {
                         // For English, try to find English voice
@@ -922,23 +940,20 @@
                     utterance.rate = 0.8;
                     utterance.pitch = 1.1;
                     
-                    // For Chinese, try multiple approaches
+                    // For Chinese, prioritize Cantonese (粵語)
                     if (lang === 'zh-HK' || lang === 'zh-CN') {
-                        const chineseVoice = voices.find(v => 
-                            v.lang.includes('zh-HK') || 
-                            v.lang.includes('yue') || 
-                            v.lang.includes('zh-CN') ||
-                            v.lang.includes('zh-TW') ||
-                            v.lang.includes('zh') ||
-                            v.lang.includes('cmn')
-                        );
+                        let chineseVoice = null;
+                        chineseVoice = voices.find(v => v.lang.includes('yue'));
+                        if (!chineseVoice) chineseVoice = voices.find(v => v.lang.includes('zh-HK'));
+                        if (!chineseVoice) chineseVoice = voices.find(v => v.name.toLowerCase().includes('cantonese'));
+                        if (!chineseVoice) chineseVoice = voices.find(v => v.lang.includes('zh-CN'));
+                        if (!chineseVoice) chineseVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('cmn'));
                         
                         if (chineseVoice) {
                             utterance.voice = chineseVoice;
                             utterance.lang = chineseVoice.lang;
                         } else {
-                            // No Chinese voice? Try default
-                            utterance.lang = '';
+                            utterance.lang = 'zh-HK';
                         }
                     } else {
                         const englishVoice = voices.find(v => v.lang.includes('en'));
