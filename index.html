@@ -501,6 +501,57 @@
                 { chinese: '長褲', emoji: '👖', english: 'trousers' },
                 { chinese: '襪', emoji: '🧦', english: 'socks' },
                 { chinese: '鞋', emoji: '👟', english: 'shoes' }
+            ],
+            '📚 K2第三段中文': [
+                // 自然主題
+                { chinese: '雲', emoji: '☁️', english: 'cloud' },
+                { chinese: '風', emoji: '💨', english: 'wind' },
+                { chinese: '雷', emoji: '⛈️', english: 'thunder' },
+                { chinese: '電', emoji: '⚡', english: 'lightning' },
+                { chinese: '火', emoji: '🔥', english: 'fire' },
+                { chinese: '水', emoji: '💧', english: 'water' },
+                { chinese: '冰', emoji: '🧊', english: 'ice' },
+                { chinese: '冷', emoji: '🥶', english: 'cold' },
+                { chinese: '熱', emoji: '🔥', english: 'hot' },
+                // 水相關
+                { chinese: '海', emoji: '🌊', english: 'sea' },
+                { chinese: '洋', emoji: '🌊', english: 'ocean' },
+                { chinese: '河', emoji: '🏞️', english: 'river' },
+                { chinese: '流', emoji: '➡️', english: 'flow' },
+                { chinese: '蒸發', emoji: '💨', english: 'evaporate' },
+                { chinese: '落下', emoji: '⬇️', english: 'fall down' },
+                { chinese: '雨水', emoji: '🌧️', english: 'rain water' },
+                // 洗相關
+                { chinese: '洗', emoji: '🚿', english: 'wash' },
+                { chinese: '洗澡', emoji: '🛁', english: 'bath' },
+                { chinese: '洗菜', emoji: '🥬', english: 'wash vegetables' },
+                { chinese: '刷牙', emoji: '🦷', english: 'brush teeth' },
+                { chinese: '洗臉', emoji: '🧴', english: 'wash face' },
+                { chinese: '洗頭', emoji: '💆', english: 'wash hair' },
+                { chinese: '喝水', emoji: '🥤', english: 'drink water' },
+                // 形狀
+                { chinese: '正方體', emoji: '🟦', english: 'cube' },
+                { chinese: '長方體', emoji: '📦', english: 'rectangular prism' },
+                { chinese: '三角柱體', emoji: '🔺', english: 'triangular prism' },
+                { chinese: '圓柱體', emoji: '🥫', english: 'cylinder' },
+                // 用火相關
+                { chinese: '光', emoji: '💡', english: 'light' },
+                { chinese: '取暖', emoji: '🔥', english: 'warm up' },
+                { chinese: '煮食', emoji: '🍳', english: 'cooking' },
+                { chinese: '火箭', emoji: '🚀', english: 'rocket' },
+                { chinese: '小心', emoji: '⚠️', english: 'be careful' },
+                { chinese: '安全', emoji: '🛡️', english: 'safety' },
+                // 方向
+                { chinese: '風向', emoji: '🧭', english: 'wind direction' },
+                { chinese: '空氣', emoji: '💨', english: 'air' },
+                { chinese: '東', emoji: '🧭', english: 'east' },
+                { chinese: '南', emoji: '🧭', english: 'south' },
+                { chinese: '西', emoji: '🧭', english: 'west' },
+                { chinese: '北', emoji: '🧭', english: 'north' },
+                // 主題
+                { chinese: '大自然', emoji: '🌿', english: 'nature' },
+                { chinese: '清明節', emoji: '🏮', english: 'Qingming Festival' },
+                { chinese: '復活節', emoji: '🐣', english: 'Easter' }
             ]
         };
         
@@ -565,7 +616,7 @@
             document.getElementById('fc-review-btn').style.display = 'none';
             
             // Check if showing quantity control
-            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
+            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
             document.getElementById('fc-quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             
             // Show quantity slider only for learning categories
@@ -827,7 +878,7 @@
         // Quiz
         function initQuiz() {
             // Show/hide quantity slider based on category
-            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
+            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
             document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             
             // Update slider max based on available words
@@ -875,7 +926,7 @@
             ).join('');
             
             // Update slider visibility and values
-            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
+            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
             document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             const availableWords = vocabulary[currentCategory].length;
             document.getElementById('quantity-slider').max = Math.min(100, availableWords);
@@ -1315,3 +1366,4 @@
     </script>
 </body>
 </html>
+
