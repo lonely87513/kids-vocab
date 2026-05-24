@@ -680,16 +680,16 @@
         function renderCard() {
             const word = flashcardWords[currentCard];
             const isEnglish = currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
-            const isChineseLearning = currentCategory.includes('K2第二段中文');
+            const isChineseLearning = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文');
             document.getElementById('fc-progress').style.width = ((currentCard + 1) / flashcardWords.length * 100) + '%';
             document.getElementById('fc-progress').textContent = `${currentCard + 1}/${flashcardWords.length}`;
             
             // Smaller emoji for learning categories to avoid blocking buttons
-            const emojiSize = (isEnglish || isChineseLearning) ? '1.2em' : '4em';
+            const emojiSize = (isEnglish || isChineseLearning) ? '0.9em' : '4em';
             
             if (isEnglish) {
                 document.getElementById('fc-container').innerHTML = `
-                    <div class="card card-front"><div style="font-size:${emojiSize}">${showEmoji ? word.emoji : ""}</div></div>
+                    <div class="card card-front"><div style="font-size:${emojiSize}">${showEmoji ? word.emoji : ""}</div><div style="font-size:1.3em;font-weight:bold;color:#333;margin-top:5px;">${word.chinese}</div></div>
                     <div class="card card-back">
                         <div class="word-row">
                             <span class="word-text">${word.english}</span>
@@ -702,7 +702,7 @@
                     <div class="card card-front"><div style="font-size:${emojiSize}">${showEmoji ? word.emoji : ""}</div></div>
                     <div class="card card-back">
                         <div class="word-row">
-                            <span class="word-text">${word.chinese}</span>
+                            <span class="word-text" style="font-size:1.3em">${word.chinese}</span>
                             <button class="speak-btn" onclick="speakText('${word.chinese}', 'zh-HK')">🔊</button>
                         </div>
                         <div class="word-english">${word.english}</div>
@@ -954,7 +954,7 @@
             options = shuffle(options);
             
             const isEnglish = currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
-            const isChineseLearning = currentCategory.includes('K2第二段中文');
+            const isChineseLearning = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文');
             const emojiSize = (isEnglish || isChineseLearning) ? '1.2em' : '3em';
             
             if (isEnglish) {
@@ -1366,4 +1366,5 @@
     </script>
 </body>
 </html>
+
 
