@@ -176,7 +176,7 @@
                 </div>
                 <input type="range" id="fc-quantity-slider" class="quantity-slider" min="1" max="100" value="10" onchange="updateFcQuantity(this.value)">
                 <div style="text-align:center;margin-top:15px;">
-                    <button class="back-btn" onclick="startFlashcards()">✅ 開始 🃏</button>
+                    <button id="fc-start-btn" class="back-btn" onclick="startFlashcards()">✅ 開始 🃏</button>
                 </div>
             </div>
             
@@ -602,13 +602,33 @@
             if (game === 'dictation') initDictation();
         }
         
+        // Escape HTML special characters to prevent XSS via user-controlled strings.
+        // Use this BEFORE any concatenation into innerHTML or attribute values that
+        // originate from addWord inputs, category names, or other user-provided data.
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function getCategories() { return Object.keys(vocabulary); }
         
         // Flashcards
         function initFlashcards() {
-            document.getElementById('fc-tabs').innerHTML = getCategories().map(cat => 
-                `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" onclick="switchCategory('${cat}')">${cat}</button>`
-            ).join('');
+            const fcTabs = document.getElementById('fc-tabs');
+            fcTabs.innerHTML = '';
+            getCategories().forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-tab' + (cat === currentCategory ? ' active' : '');
+                btn.dataset.category = cat;
+                btn.textContent = cat;  // safe: textContent escapes HTML
+                btn.addEventListener('click', () => switchCategory(cat));
+                fcTabs.appendChild(btn);
+            });
             
             // Reset score display
             document.getElementById('fc-score').textContent = '✅ 0 | ❌ 0';
@@ -623,10 +643,17 @@
             if (isLearningCategory) {
                 const availableWords = vocabulary[currentCategory].length;
                 const slider = document.getElementById('fc-quantity-slider');
-                slider.max = Math.min(100, availableWords);
+                slider.max = Math.min(100, Math.max(1, availableWords));  // slider min=1, avoid 0
                 if (fcQuantity > availableWords) fcQuantity = availableWords;
                 slider.value = fcQuantity;
                 document.getElementById('fc-quantity-display').textContent = `${fcQuantity} 題 / 共 ${availableWords} 題`;
+                
+                // Disable start button if no words available (C3 safety)
+                const startBtn = document.getElementById('fc-start-btn');
+                if (startBtn) {
+                    startBtn.disabled = availableWords === 0;
+                    startBtn.textContent = availableWords === 0 ? '類別未有字詞' : '✅ 開始 🃏';
+                }
                 
                 // Hide cards and progress when quantity selector is shown
                 document.getElementById('fc-container').innerHTML = '<div style="text-align:center;color:#667eea;font-size:1.5em;padding:50px;">👇 設定題目數量後按「開始」🃏</div>';
@@ -646,11 +673,24 @@
             fcQuantity = parseInt(value);
             const availableWords = vocabulary[currentCategory].length;
             document.getElementById('fc-quantity-display').textContent = `${fcQuantity} 題 / 共 ${availableWords} 題`;
+            // Keep start button disabled state in sync (C3 safety)
+            const startBtn = document.getElementById('fc-start-btn');
+            if (startBtn) {
+                startBtn.disabled = availableWords === 0;
+                startBtn.textContent = availableWords === 0 ? '類別未有字詞' : '✅ 開始 🃏';
+            }
         }
         
         // Start flashcards with selected quantity
         function startFlashcards() {
-            const allWords = shuffle([...vocabulary[currentCategory]]);
+            const allWords = shuffle([...vocabulary[currentCategory] || []]);
+            // Guard: empty category would otherwise break renderCard (C3 defense-in-depth)
+            if (allWords.length === 0 || fcQuantity <= 0) {
+                fcStarted = false;
+                flashcardWords = [];
+                renderCard();  // renderCard() shows the friendly empty state
+                return;
+            }
             flashcardWords = allWords.slice(0, fcQuantity);
             currentCard = 0;
             fcCorrect = 0;
@@ -678,9 +718,25 @@
         }
         
         function renderCard() {
-            const word = flashcardWords[currentCard];
             const isEnglish = currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
             const isChineseLearning = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文');
+
+            // Guard (C3): empty flashcardWords (user-created empty category,
+            // fcQuantity=0, etc.) would otherwise throw
+            //   TypeError: Cannot read properties of undefined (reading 'emoji')
+            // Show a friendly empty state instead of crashing the flashcard UI.
+            if (!flashcardWords || flashcardWords.length === 0 || !flashcardWords[currentCard]) {
+                const container = document.getElementById('fc-container');
+                container.innerHTML = '<div class="card card-front" style="padding:40px;text-align:center;color:#888;">📭 呢個類別未有字詞！<br><br>去「加字詞」加入新字詞先再玩。</div>';
+                const progress = document.getElementById('fc-progress');
+                progress.style.width = '0%';
+                progress.textContent = '0/0';
+                document.getElementById('fc-buttons').style.display = 'none';
+                fcStarted = false;
+                return;
+            }
+            const word = flashcardWords[currentCard];
+
             document.getElementById('fc-progress').style.width = ((currentCard + 1) / flashcardWords.length * 100) + '%';
             document.getElementById('fc-progress').textContent = `${currentCard + 1}/${flashcardWords.length}`;
             
@@ -890,11 +946,19 @@
                 slider.value = quizQuantity;
             }
             document.getElementById('quantity-display').textContent = `${quizQuantity} 題 / 共 ${availableWords} 題`;
-            
-            document.getElementById('quiz-tabs').innerHTML = getCategories().map(cat => 
-                `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" onclick="switchQuizCategory('${cat}')">${cat}</button>`
-            ).join('');
-            
+
+            // Render quiz category tabs via DOM API to prevent XSS via category names
+            const quizTabs = document.getElementById('quiz-tabs');
+            quizTabs.innerHTML = '';
+            getCategories().forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-tab' + (cat === currentCategory ? ' active' : '');
+                btn.dataset.category = cat;
+                btn.textContent = cat;
+                btn.addEventListener('click', () => switchQuizCategory(cat));
+                quizTabs.appendChild(btn);
+            });
+
             // Use quantity limit
             const allWords = shuffle([...vocabulary[currentCategory]]);
             quizWords = allWords.slice(0, quizQuantity);
@@ -921,9 +985,17 @@
             quizWords = allWords.slice(0, quizQuantity);
             quizScore = 0;
             document.getElementById('quiz-score').textContent = `⭐ 0 / ${quizQuantity}`;
-            document.getElementById('quiz-tabs').innerHTML = getCategories().map(c => 
-                `<button class="category-tab ${c === currentCategory ? 'active' : ''}" onclick="switchQuizCategory('${c}')">${c}</button>`
-            ).join('');
+            // Re-render quiz category tabs via DOM API (C2 XSS fix)
+            const quizTabs = document.getElementById('quiz-tabs');
+            quizTabs.innerHTML = '';
+            getCategories().forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = 'category-tab' + (c === currentCategory ? ' active' : '');
+                btn.dataset.category = c;
+                btn.textContent = c;
+                btn.addEventListener('click', () => switchQuizCategory(c));
+                quizTabs.appendChild(btn);
+            });
             
             // Update slider visibility and values
             const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
@@ -993,9 +1065,20 @@
         
         // Matching
         function initMatching() {
-            document.getElementById('match-tabs').innerHTML = getCategories().map(cat => 
-                `<button class="category-tab ${cat === currentCategory ? 'active' : ''}" onclick="currentCategory='${cat}'; initMatching()">${cat}</button>`
-            ).join('');
+            // Render match category tabs via DOM API to prevent XSS via category names
+            const matchTabs = document.getElementById('match-tabs');
+            matchTabs.innerHTML = '';
+            getCategories().forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-tab' + (cat === currentCategory ? ' active' : '');
+                btn.dataset.category = cat;
+                btn.textContent = cat;
+                btn.addEventListener('click', () => {
+                    currentCategory = cat;
+                    initMatching();
+                });
+                matchTabs.appendChild(btn);
+            });
             
             const words = shuffle([...vocabulary[currentCategory]]).slice(0, 4);
             const pairs = [];
@@ -1118,13 +1201,30 @@
             const w = document.getElementById('add-word').value.trim();
             const e = document.getElementById('add-emoji').value.trim();
             const en = document.getElementById('add-english').value.trim();
+            const result = document.getElementById('add-result');
             if (!cat || !w || !e) {
-                document.getElementById('add-result').innerHTML = '❌ 要填晒類別、文字、Emoji！';
+                // C1: use DOM API (textContent) instead of innerHTML to prevent XSS
+                result.innerHTML = '';
+                result.textContent = '❌ 要填晒類別、文字、Emoji！';
                 return;
             }
             if (!vocabulary[cat]) vocabulary[cat] = [];
             vocabulary[cat].push({ chinese: w, emoji: e, english: en });
-            document.getElementById('add-result').innerHTML = `✅ 加入成功！<br><div style="font-size:2em">${e}</div><div>${w} = ${en}</div>`;
+
+            // C1 fix: render success message via DOM API so user-provided inputs
+            // (emoji, chinese, english) are treated as text, not HTML.
+            result.innerHTML = '';
+            const okLine = document.createElement('div');
+            okLine.textContent = '✅ 加入成功！';
+            const emojiDiv = document.createElement('div');
+            emojiDiv.style.fontSize = '2em';
+            emojiDiv.textContent = e;
+            const textDiv = document.createElement('div');
+            textDiv.textContent = `${w} = ${en}`;
+            result.appendChild(okLine);
+            result.appendChild(emojiDiv);
+            result.appendChild(textDiv);
+
             ['add-category','add-word','add-emoji','add-english'].forEach(id => document.getElementById(id).value = '');
         }
         
@@ -1150,9 +1250,17 @@
         function getDictCategories() { return Object.keys(dictationSentences); }
         
         function initDictation() {
-            document.getElementById('dict-tabs').innerHTML = getDictCategories().map(cat => 
-                `<button class="category-tab ${cat === dictCategory ? 'active' : ''}" onclick="switchDictCategory('${cat}')">${cat}</button>`
-            ).join('');
+            // Render dict category tabs via DOM API to prevent XSS via category names
+            const dictTabs = document.getElementById('dict-tabs');
+            dictTabs.innerHTML = '';
+            getDictCategories().forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-tab' + (cat === dictCategory ? ' active' : '');
+                btn.dataset.category = cat;
+                btn.textContent = cat;
+                btn.addEventListener('click', () => switchDictCategory(cat));
+                dictTabs.appendChild(btn);
+            });
             
             // Show quantity control
             document.getElementById('dict-quantity-control').style.display = 'block';
