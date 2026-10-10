@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -240,8 +240,8 @@
             <div style="text-align: center; margin-top: 20px;">
                 <div id="fc-score" style="font-size: 1.2em; margin-bottom: 15px; color: #667eea;">✅ 0 | ❌ 0</div>
                 <div id="fc-buttons">
-                    <button class="back-btn" style="background: #FF6B6B; font-size: 1.5em; padding: 15px 30px;" onclick="markWrong()">❌</button>
-                    <button class="back-btn" style="background: #4ECDC4; font-size: 1.5em; padding: 15px 30px;" onclick="markCorrect()">✅</button>
+                    <button class="back-btn" style="background: #FF6B6B; font-size: 1.5em; padding: 15px 30px;" onclick="markWrong()" aria-label="答錯">❌</button>
+                    <button class="back-btn" style="background: #4ECDC4; font-size: 1.5em; padding: 15px 30px;" onclick="markCorrect()" aria-label="答啱">✅</button>
                 </div>
                 <div id="fc-review-btn" style="display: none; margin-top: 15px;">
                     <button class="back-btn" style="background: #FFE66D; color: #333; font-size: 1.2em; padding: 15px 30px;" onclick="reviewWrongCards()">📝 查看錯題 (0)</button>
@@ -325,11 +325,6 @@
     </div>
     
     <script>
-        // Load voices early
-        window.speechSynthesis.onvoiceschanged = function() {
-            window.speechSynthesis.getVoices();
-        };
-        
         // Helper: Ensure voices are loaded before speaking (fixes Android)
         // Pre-load voices on page load (Android Chrome workaround)
         function preloadVoices() {
@@ -889,7 +884,7 @@
                     <div class="card card-back">
                         <div class="word-row">
                             <span class="word-text">${word.english}</span>
-                            <button class="speak-btn" onclick="speakText('${word.english}', 'en')">🔊</button>
+                            <button class="speak-btn" onclick="speakText('${word.english}', 'en')" aria-label="讀英文">🔊</button>
                         </div>
                     </div>
                 `;
@@ -899,7 +894,7 @@
                     <div class="card card-back">
                         <div class="word-row">
                             <span class="word-text" style="font-size:1.3em">${word.chinese}</span>
-                            <button class="speak-btn" onclick="speakText('${word.chinese}', 'zh-HK')">🔊</button>
+                            <button class="speak-btn" onclick="speakText('${word.chinese}', 'zh-HK')" aria-label="讀粵語">🔊</button>
                         </div>
                         <div class="word-english">${word.english}</div>
                     </div>
@@ -1060,10 +1055,6 @@
             document.getElementById('fc-score').textContent = `✅ 0 | ❌ 0 (溫習錯題)`;
             renderCard();
         }
-        
-        // Old navigation functions (kept for compatibility)
-        function prevCard() { if (currentCard > 0) { currentCard--; renderCard(); } }
-        function nextCard() { if (currentCard < flashcardWords.length - 1) { currentCard++; renderCard(); } }
         
         // Quiz
         function initQuiz() {
@@ -1330,7 +1321,7 @@
                     
                     window.speechSynthesis.speak(utterance);
                 } catch(e) {
-                    console.log('Speech error:', e);
+                    console.warn('Speech error:', e);
                 }
             }
         }
@@ -1489,12 +1480,12 @@
             // Show hint (partial sentence)
             document.getElementById('dict-hint').textContent = `💡 提示：${item.hint}`;
             
-            // Hide the actual sentence and show blanks
-            const words = item.sentence.split(' ');
-            let blankSentence = item.sentence.replace(/[a-zA-Z]/g, '_');
+            // Hide the actual sentence and show blanks (one "___" per word so the
+            // visual gap matches the real sentence length).
+            const placeholder = item.sentence.split(' ').map(() => '___').join(' ');
             document.getElementById('dict-sentence').innerHTML = `
                 <div style="font-size: 1.2em; color: #667eea; line-height: 1.8;">
-                    <span style="background: #f0f0f0; padding: 5px 15px; border-radius: 10px;">___ ___ ___</span>
+                    <span style="background: #f0f0f0; padding: 5px 15px; border-radius: 10px;">${placeholder}</span>
                 </div>
             `;
             
@@ -1533,7 +1524,7 @@
                     
                     window.speechSynthesis.speak(utterance);
                 } catch(e) {
-                    console.log('Speech error:', e);
+                    console.warn('Speech error:', e);
                 }
             }
         }

@@ -1,15 +1,19 @@
 # 🎮 孖寶學字詞 - Kids Vocab Learning
 
-一個為5歲小朋友設計既中英文詞彙學習遊戲網站！
+[![GitHub Pages](https://img.shields.io/badge/deploy-GitHub%20Pages-brightgreen?logo=github)](https://lonely87513.github.io/kids-vocab/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+一個為 5 歲小朋友設計的中英文詞彙學習遊戲網站！
 
 ## 🌟 功能
 
 | 功能 | 說明 |
 |------|------|
-| 🃏 認字卡 |睇Emoji估中文/英文 |
+| 🃏 認字卡 | 睇 Emoji 估中文/英文 |
 | ❓ 估估吓 | 選擇題遊戲 |
-| 🔗 配對 | Emoji配中文字 |
+| 🔗 配對 | Emoji 配中文字 |
 | ➕ 加字詞 | 自己添加新詞彙 |
+| 📝 句子讀默 | 英文默書句子練習 |
 
 ## 📱 預設詞彙
 
@@ -53,6 +57,10 @@ open index.html
 - ✅ 粵語/繁體中文支援
 - ✅ 正向鼓勵
 - ✅ 可自定義詞彙
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE) file for details.
 
 ---
 
