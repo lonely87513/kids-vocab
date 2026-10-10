@@ -366,6 +366,22 @@
                 }, 1000);
             });
         }
+
+        // Pick the best available Chinese voice from a list, preferring Cantonese.
+        // Returns null if nothing Chinese-shaped is found, so the caller can let
+        // the SpeechSynthesisUtterance fall back to the device default language
+        // (which is normally correct on the user's own phone anyway).
+        function pickBestChineseVoice(voices) {
+            if (!voices || voices.length === 0) return null;
+            const lc = v => (v.lang || '').toLowerCase();
+            // Priority order: Cantonese first, then traditional/simplified Chinese variants
+            const priorities = ['yue', 'zh-hk', 'zh-hant', 'zh-tw', 'zh-cn', 'zh', 'cmn'];
+            for (const code of priorities) {
+                const v = voices.find(v => lc(v).startsWith(code) || lc(v).includes('-' + code));
+                if (v) return v;
+            }
+            return null;
+        }
         
         // Vocabulary data
         const vocabulary = {
@@ -801,14 +817,21 @@
         // Start flashcards with selected quantity
         function startFlashcards() {
             const allWords = shuffle([...vocabulary[currentCategory] || []]);
+            // M8: clamp fcQuantity into [1, allWords.length] so we never end
+            // up with an empty flashcardWords (fcQuantity=0) or accidentally
+            // requesting more cards than the category actually has. This is
+            // defense-in-depth on top of the slider min=1 and initFlashcards
+            // already clamping the slider max.
+            const maxAvailable = allWords.length;
+            const safeQty = Math.max(1, Math.min(fcQuantity || 10, maxAvailable));
             // Guard: empty category would otherwise break renderCard (C3 defense-in-depth)
-            if (allWords.length === 0 || fcQuantity <= 0) {
+            if (maxAvailable === 0) {
                 fcStarted = false;
                 flashcardWords = [];
                 renderCard();  // renderCard() shows the friendly empty state
                 return;
             }
-            flashcardWords = allWords.slice(0, fcQuantity);
+            flashcardWords = allWords.slice(0, safeQty);
             currentCard = 0;
             fcCorrect = 0;
             fcWrong = 0;
@@ -885,80 +908,71 @@
         }
         
         // Speak text function
+        // M7: isSpeaking flag prevents rapid emoji clicks from queueing multiple
+        // utterances that overlap. The flag is released by onend/onerror so a
+        // new speak() call after the current one finishes works normally.
+        let isSpeaking = false;
+
         async function speakText(text, lang) {
-            if ('speechSynthesis' in window) {
-                try {
-                    // Cancel any ongoing speech
-                    window.speechSynthesis.cancel();
-                    
-                    // Wait for voices to load (fixes Android)
-                    const voices = await ensureVoicesLoaded();
-                    
-                    const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.rate = 0.8; // Slower for kids
-                    utterance.pitch = 1.1; // Slightly higher pitch for friendliness
-                    
-                    // For Chinese, prioritize Cantonese (粵語) over Mandarin
-                    if (lang === 'zh-HK' || lang === 'zh-CN') {
-                        // Priority: yue > zh-HK > Cantonese > zh-CN > others
-                        let chineseVoice = null;
-                        
-                        // First: try yue (Cantonese code)
-                        chineseVoice = voices.find(v => v.lang.includes('yue'));
-                        
-                        // Second: try zh-HK
-                        if (!chineseVoice) {
-                            chineseVoice = voices.find(v => v.lang.includes('zh-HK'));
-                        }
-                        
-                        // Third: try Cantonese in name
-                        if (!chineseVoice) {
-                            chineseVoice = voices.find(v => v.name.toLowerCase().includes('cantonese'));
-                        }
-                        
-                        // Fourth: try zh-CN but ONLY if no Cantonese found
-                        if (!chineseVoice) {
-                            chineseVoice = voices.find(v => v.lang.includes('zh-CN'));
-                        }
-                        
-                        // Fifth: any Chinese voice
-                        if (!chineseVoice) {
-                            chineseVoice = voices.find(v => 
-                                v.lang.includes('zh') || v.lang.includes('cmn')
-                            );
-                        }
-                        
-                        if (chineseVoice) {
-                            utterance.voice = chineseVoice;
-                            utterance.lang = chineseVoice.lang;
-                            console.log('Using voice:', chineseVoice.name, chineseVoice.lang);
-                        } else {
-                            console.log('No Chinese voice found');
-                            utterance.lang = 'zh-HK'; // Force Cantonese
-                        }
-                    } else {
-                        // For English, try to find English voice
-                        const englishVoice = voices.find(v => v.lang.includes('en'));
-                        if (englishVoice) {
-                            utterance.voice = englishVoice;
-                        }
-                        utterance.lang = lang;
-                    }
-                    
-                    // Add error handler
-                    utterance.onerror = function(e) {
-                        console.log('Speech error:', e);
-                    };
-                    
-                    window.speechSynthesis.speak(utterance);
-                } catch(e) {
-                    console.log('Speech error:', e);
-                }
-            } else {
-                // Old device with no speechSynthesis API at all — log to console
-                // instead of blocking with a native alert (which the M4 modal
-                // philosophy also applies to: blocking UI is bad for kids).
+            // M7: drop repeated calls while an utterance is still in flight
+            if (isSpeaking) return;
+            if (!('speechSynthesis' in window)) {
                 console.warn('呢部機未支援語音功能 🤷');
+                return;
+            }
+            isSpeaking = true;
+            try {
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+
+                // Wait for voices to load (fixes Android + iOS Safari)
+                const voices = await ensureVoicesLoaded();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.8; // Slower for kids
+                utterance.pitch = 1.1; // Slightly higher pitch for friendliness
+
+                // For Chinese, prioritize Cantonese (粵語) over Mandarin
+                if (lang === 'zh-HK' || lang === 'zh-CN') {
+                    // M6: extract the priority chain into a helper so the same
+                    // logic is easy to test and reuse. Returns null if no Chinese
+                    // voice exists, in which case the utterance falls back to the
+                    // device default language (almost always correct on the
+                    // user's own phone) instead of being forced to zh-HK which
+                    // Safari iOS would then reject.
+                    const chineseVoice = pickBestChineseVoice(voices);
+                    if (chineseVoice) {
+                        utterance.voice = chineseVoice;
+                        utterance.lang = chineseVoice.lang;
+                        console.warn('Using voice:', chineseVoice.name, chineseVoice.lang);
+                    } else {
+                        // No Chinese voice available — let the device decide.
+                        // Don't throw an alert; just log so the rest of the UI
+                        // continues to work for kids.
+                        console.warn('No Chinese voice found; using device default');
+                        utterance.lang = 'zh-HK';
+                    }
+                } else {
+                    // For English, try to find English voice
+                    const englishVoice = voices.find(v => (v.lang || '').toLowerCase().startsWith('en'));
+                    if (englishVoice) {
+                        utterance.voice = englishVoice;
+                    }
+                    utterance.lang = lang;
+                }
+
+                // Always release the flag when the utterance finishes (or errors),
+                // so the next click can speak again.
+                utterance.onend = () => { isSpeaking = false; };
+                utterance.onerror = (e) => {
+                    console.warn('Speech error:', e && e.error ? e.error : e);
+                    isSpeaking = false;
+                };
+
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {
+                console.warn('Speech error:', e);
+                isSpeaking = false;
             }
         }
         
