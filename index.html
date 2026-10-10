@@ -744,7 +744,24 @@
         }
 
         function getCategories() { return Object.keys(vocabulary); }
-        
+
+        // K2 learning-category helpers — single source of truth for the
+        // "is this category one of the K2第二段 / K2第三段 中文/英文 sets?"
+        // check that used to be duplicated inline in 7 places. Returns
+        // true/false for category-name strings (or falsy input).
+        function isK2Category(cat) {
+            if (!cat) return false;
+            return cat.includes('K2第二段') || cat.includes('K2第三段');
+        }
+        function isK2English(cat) {
+            if (!cat) return false;
+            return cat.includes('K2第二段英文') || cat.includes('K2第三段英文');
+        }
+        function isK2Chinese(cat) {
+            if (!cat) return false;
+            return cat.includes('K2第二段中文') || cat.includes('K2第三段中文');
+        }
+
         // Flashcards
         function initFlashcards() {
             const fcTabs = document.getElementById('fc-tabs');
@@ -764,7 +781,7 @@
             document.getElementById('fc-review-btn').style.display = 'none';
             
             // Check if showing quantity control
-            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
+            const isLearningCategory = isK2Category(currentCategory);
             document.getElementById('fc-quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             
             // Show quantity slider only for learning categories
@@ -853,8 +870,8 @@
         }
         
         function renderCard() {
-            const isEnglish = currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
-            const isChineseLearning = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文');
+            const isEnglish = isK2English(currentCategory);
+            const isChineseLearning = isK2Chinese(currentCategory);
 
             // Guard (C3): empty flashcardWords (user-created empty category,
             // fcQuantity=0, etc.) would otherwise throw
@@ -998,7 +1015,7 @@
         }
         
         function showFinishScreen() {
-            const isEnglish = currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
+            const isEnglish = isK2English(currentCategory);
             const finishMsg = fcWrong === 0 
                 ? '🎉 全部答啱喇！勁呀！'
                 : `📝 完成！對咗 ${fcCorrect} 題 / 錯咗 ${fcWrong} 題`;
@@ -1059,7 +1076,7 @@
         // Quiz
         function initQuiz() {
             // Show/hide quantity slider based on category
-            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
+            const isLearningCategory = isK2Category(currentCategory);
             document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             
             // Update slider max based on available words
@@ -1123,7 +1140,7 @@
             });
             
             // Update slider visibility and values
-            const isLearningCategory = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文') || currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
+            const isLearningCategory = isK2Category(currentCategory);
             document.getElementById('quantity-control').style.display = isLearningCategory ? 'block' : 'none';
             const availableWords = vocabulary[currentCategory].length;
             document.getElementById('quantity-slider').max = Math.min(100, availableWords);
@@ -1150,8 +1167,8 @@
             }
             options = shuffle(options);
             
-            const isEnglish = currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
-            const isChineseLearning = currentCategory.includes('K2第二段中文') || currentCategory.includes('K2第三段中文');
+            const isEnglish = isK2English(currentCategory);
+            const isChineseLearning = isK2Chinese(currentCategory);
             const emojiSize = (isEnglish || isChineseLearning) ? '1.2em' : '3em';
             
             if (isEnglish) {
@@ -1212,7 +1229,7 @@
             
             const words = shuffle([...vocabulary[currentCategory]]).slice(0, 4);
             const pairs = [];
-            const isEnglish = currentCategory.includes('K2第二段英文') || currentCategory.includes('K2第三段英文');
+            const isEnglish = isK2English(currentCategory);
             
             words.forEach((w, i) => {
                 const text = isEnglish ? w.english : w.chinese;
