@@ -149,6 +149,58 @@
         }
         
         .card { position: relative; }
+
+        /* ========== Mobile Responsive (M3) ==========
+           Without these guards, matching cards and buttons can overflow the
+           viewport on narrow screens (5yo tablets / phones). The grid drops
+           to 2 columns and per-element max-width keeps everything inside. */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { max-width: 100%; }
+            h1 { font-size: 1.8em; margin-bottom: 12px; }
+            .menu { gap: 10px; margin-bottom: 20px; }
+            .menu-btn { padding: 14px 22px; font-size: 1.15em; }
+            .game-area { padding: 18px; border-radius: 20px; }
+            .matching-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 100%; }
+            .matching-card { font-size: 1.1em !important; max-width: 100%; box-sizing: border-box; }
+            .card { max-width: 100%; box-sizing: border-box; height: auto; min-height: 160px; }
+            .option-btn { padding: 14px 18px; font-size: 1.15em; }
+            .add-word-form input { font-size: 1em; padding: 12px; }
+            .add-word-form button { font-size: 1.1em; padding: 12px; }
+            .back-btn { padding: 12px 20px; font-size: 1em; }
+        }
+
+        /* ========== Completion Modal (M4) ==========
+           Bouncy fade+pop animation so a small win feels rewarding. Using a
+           custom modal avoids the blocking native dialog, which is friendlier
+           for a 5-year-old using a touchscreen tablet. */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: modalFadeIn 0.3s ease both;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+            max-width: 90vw;
+            animation: modalPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes modalPopIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -266,6 +318,9 @@
                 <button onclick="addWord()">✅ 加入</button>
             </div>
             <div id="add-result" style="text-align: center; margin-top: 20px; font-size: 1.3em;"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="resetCustomWords()" style="padding: 10px 20px; font-size: 0.95em; border: none; border-radius: 10px; background: #FF6B6B; color: white; cursor: pointer;">🗑️ 重設自訂字詞</button>
+            </div>
         </div>
     </div>
     
@@ -554,12 +609,74 @@
                 { chinese: '復活節', emoji: '🐣', english: 'Easter' }
             ]
         };
-        
+
+        // ========== Custom Words Persistence (M1) ==========
+        // User-added words survive page reload via localStorage.
+        // On reload we re-merge them into the in-memory vocabulary so each
+        // game (flashcards, quiz, matching, dictation) sees the latest set.
+        const CUSTOM_WORDS_KEY = 'kidsVocab_customWords';
+        let customWords = [];
+
+        function loadCustomWords() {
+            try {
+                const stored = localStorage.getItem(CUSTOM_WORDS_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) customWords = parsed;
+                }
+            } catch (e) {
+                console.warn('Failed to load custom words:', e);
+                customWords = [];
+            }
+        }
+
+        function saveCustomWords() {
+            try {
+                localStorage.setItem(CUSTOM_WORDS_KEY, JSON.stringify(customWords));
+            } catch (e) {
+                console.warn('Failed to save custom words:', e);
+            }
+        }
+
+        function resetCustomWords() {
+            customWords = [];
+            try { localStorage.removeItem(CUSTOM_WORDS_KEY); } catch (e) {}
+            location.reload();
+        }
+
+        function applyCustomWords() {
+            for (const word of customWords) {
+                if (!word || !word.category || !word.chinese) continue;
+                if (!vocabulary[word.category]) vocabulary[word.category] = [];
+                if (!vocabulary[word.category].some(w => w.chinese === word.chinese)) {
+                    vocabulary[word.category].push({
+                        chinese: word.chinese,
+                        emoji: word.emoji || '',
+                        english: word.english || ''
+                    });
+                }
+            }
+        }
+
+        // Load + merge custom words before any game init runs.
+        loadCustomWords();
+        applyCustomWords();
+
         // Game state
         let currentCategory = '📚 K2第二段中文';
         let currentCard = 0;
         let quizScore = 0;
-        let matchScore = 0;
+        // M2: matching score is tracked per-category so switching category
+        // starts fresh instead of carrying the previous score over.
+        const matchStates = {};
+
+        function getMatchState() {
+            if (!matchStates[currentCategory]) {
+                matchStates[currentCategory] = { score: 0 };
+            }
+            return matchStates[currentCategory];
+        }
+
         let quizWords = [];
         let flashcardWords = [];
         let selectedMatch = null;
@@ -838,7 +955,10 @@
                     console.log('Speech error:', e);
                 }
             } else {
-                alert('呢部機未支援語音功能 🤷');
+                // Old device with no speechSynthesis API at all — log to console
+                // instead of blocking with a native alert (which the M4 modal
+                // philosophy also applies to: blocking UI is bad for kids).
+                console.warn('呢部機未支援語音功能 🤷');
             }
         }
         
@@ -1065,6 +1185,11 @@
         
         // Matching
         function initMatching() {
+            // M2: reset per-category score at the start of each matching session.
+            // initMatching() is also called when the user switches category, which
+            // naturally clears the previous score without us needing a manual reset.
+            matchStates[currentCategory] = { score: 0 };
+
             // Render match category tabs via DOM API to prevent XSS via category names
             const matchTabs = document.getElementById('match-tabs');
             matchTabs.innerHTML = '';
@@ -1107,7 +1232,7 @@
             });
             
             const shuffled = shuffle(pairs);
-            document.getElementById('match-score').textContent = '⭐ ' + matchScore;
+            document.getElementById('match-score').textContent = '⭐ ' + getMatchState().score;
             document.getElementById('match-grid').innerHTML = shuffled.map((p, idx) => {
                 const bgColor = p.type === 'text' ? '#FF9A9E' : '#FFE66D';
                 const fontSize = p.type === 'text' ? '1.5em' : '3em';
@@ -1141,12 +1266,13 @@
                 } else if (selectedMatch.dataset.mid === card.dataset.id) {
                     card.classList.add('matched');
                     selectedMatch.classList.add('matched');
-                    matchScore++;
-                    document.getElementById('match-score').textContent = '⭐ ' + matchScore;
+                    const state = getMatchState();
+                    state.score++;
+                    document.getElementById('match-score').textContent = '⭐ ' + state.score;
                     selectedMatch = null;
                     const remaining = document.querySelectorAll('.matching-card:not(.matched)');
                     if (remaining.length === 0) {
-                        setTimeout(() => { alert('🎊 完成晒！勁呀！⭐⭐⭐'); matchScore = 0; initMatching(); }, 500);
+                        setTimeout(() => { showCompletionModal(); }, 500);
                     }
                 } else {
                     selectedMatch.classList.remove('selected');
@@ -1208,8 +1334,21 @@
                 result.textContent = '❌ 要填晒類別、文字、Emoji！';
                 return;
             }
+
+            // M1: persist to localStorage so the word survives reload. We also
+            // de-dup against existing customWords (same category + chinese) so a
+            // user double-clicking add doesn't bloat the stored array.
+            if (!customWords.some(cw => cw.category === cat && cw.chinese === w)) {
+                customWords.push({ category: cat, chinese: w, emoji: e, english: en });
+                saveCustomWords();
+            }
+
+            // M1: also de-dup in-memory vocabulary merge in case addWord is called
+            // twice before a reload (applyCustomWords reload-merge is already dedup-safe).
             if (!vocabulary[cat]) vocabulary[cat] = [];
-            vocabulary[cat].push({ chinese: w, emoji: e, english: en });
+            if (!vocabulary[cat].some(item => item.chinese === w)) {
+                vocabulary[cat].push({ chinese: w, emoji: e, english: en });
+            }
 
             // C1 fix: render success message via DOM API so user-provided inputs
             // (emoji, chinese, english) are treated as text, not HTML.
@@ -1471,7 +1610,32 @@
             document.getElementById('dict-review-btn').innerHTML = '';
             renderDictSentence();
         }
+
+        // ========== Completion Modal (M4) ==========
+        // Replaces the blocking native alert() that fired when the matching game
+        // finished. A custom modal is friendlier for 5yo users (they don't have
+        // to dismiss an OS dialog) and lets us animate the celebration.
+        function showCompletionModal() {
+            const modal = document.getElementById('completion-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeCompletionModal() {
+            const modal = document.getElementById('completion-modal');
+            if (modal) modal.style.display = 'none';
+            // Replay: re-init the matching board for the active category.
+            if (typeof initMatching === 'function') initMatching();
+        }
     </script>
+
+    <!-- M4 completion modal markup -->
+    <div id="completion-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="completion-title" style="display:none;">
+        <div class="modal-content">
+            <h2 id="completion-title" style="color:#FF6B6B;margin:0 0 12px 0;font-size:2em;">🎊 完成晒！</h2>
+            <p style="font-size:1.2em;color:#333;margin:0 0 20px 0;">勁呀！⭐⭐⭐</p>
+            <button onclick="closeCompletionModal()" style="padding:12px 24px;font-size:1.1em;background:#4ECDC4;color:white;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">再玩一次</button>
+        </div>
+    </div>
 </body>
 </html>
 
