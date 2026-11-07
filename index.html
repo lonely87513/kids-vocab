@@ -3,80 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#667eea" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#2b2455" media="(prefers-color-scheme: dark)">
     <title>🎮 孖寶學字詞 - 5歲小朋友</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Comic Sans MS", "Microsoft JhengHei", sans-serif; }
-        /* Disable touch zoom and double-tap zoom */
+        /* ============================================================
+           設計語彙（CSS 自訂屬性）
+           集中管理色彩、圓角、陰影、觸控尺寸，方便日後統一調整。
+           ============================================================ */
+        :root {
+            color-scheme: light dark;
+
+            /* 主色（紫藍） */
+            --brand: #667eea;
+            --brand-strong: #764ba2;
+            --brand-ink: #4a57c9;
+            --brand-grad: linear-gradient(135deg, #5b6ee0, #6a4bb8);
+            --brand-grad-soft: linear-gradient(135deg, #667eea, #764ba2);
+
+            /* 文字 */
+            --ink: #26243a;
+            --ink-soft: #5d5a75;
+
+            /* 介面底色 */
+            --surface: #ffffff;
+            --surface-2: #f8f8fc;
+            --surface-3: #f0f0f6;
+            --field-bg: #ffffff;
+            --line: #dcdcec;
+
+            /* 語意色（維持原有配色語意） */
+            --yellow: #FFE66D;
+            --yellow-strong: #FFD93D;
+            --mint: #4ECDC4;
+            --mint-soft: #95E1D3;
+            --red: #E8504D;
+            --red-soft: #FF6B6B;
+            --gold: #F7DC6F;
+
+            /* 圓角與陰影 */
+            --r-sm: 12px;
+            --r-md: 18px;
+            --r-lg: 28px;
+            --r-pill: 999px;
+            --sh-1: 0 2px 6px rgba(31,26,73,.10);
+            --sh-2: 0 6px 16px rgba(31,26,73,.14);
+            --sh-3: 0 14px 36px rgba(31,26,73,.20);
+            --sh-brand: 0 8px 20px rgba(102,126,234,.32);
+
+            /* 觸控最小尺寸與鍵盤焦點圈 */
+            --tap: 44px;
+            --focus: #ffd166;
+        }
+
+        /* ============================================================
+           基礎重設與流體字級
+           ============================================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Microsoft JhengHei", "PingFang HK", sans-serif; }
+        /* 以根字級配合 clamp() 令整體版面隨螢幕寬度平滑縮放 */
+        html { font-size: clamp(15px, 14.2px + 0.25vw, 18px); -webkit-text-size-adjust: 100%; }
+        /* 停用觸控縮放與雙擊縮放 */
         html, body { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; touch-action: manipulation; }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { text-align: center; color: #fff; font-size: 2.5em; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--ink);
+            min-height: 100vh;
+            min-height: 100dvh;
+            /* iPhone 瀏海與圓角安全區 */
+            padding: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))
+                     max(1.25rem, calc(env(safe-area-inset-right, 0px) + 0.75rem))
+                     max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem))
+                     max(1.25rem, calc(env(safe-area-inset-left, 0px) + 0.75rem));
+            touch-action: manipulation;
+        }
+        .container { width: 100%; max-width: 1120px; margin: 0 auto; }
+        h1 { text-align: center; color: #fff; font-size: clamp(1.9rem, 1.35rem + 2.2vw, 3rem); margin-bottom: clamp(0.75rem, 1.6vw, 1.5rem); text-shadow: 0 3px 10px rgba(0,0,0,.35); }
+        h2 { font-size: clamp(1.25rem, 1.05rem + 0.9vw, 1.75rem); line-height: 1.35; }
 
-        .menu { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-bottom: 30px; }
-        .menu-btn { padding: 20px 40px; font-size: 1.5em; border: none; border-radius: 20px; cursor: pointer; transition: all 0.3s; box-shadow: 0 6px 0 rgba(0,0,0,0.2); }
-        .menu-btn:hover { transform: translateY(-3px); }
-        .btn-flashcards { background: #FF6B6B; color: white; }
-        .btn-quiz { background: #4ECDC4; color: white; }
-        .btn-matching { background: #FFE66D; color: #333; }
-        .btn-add { background: #95E1D3; color: #333; }
-        .btn-dictation { background: #F7DC6F; color: #333; }
+        /* 鍵盤操作時的焦點圈（滑鼠點擊不顯示） */
+        :where(button, input, [tabindex]):focus-visible {
+            outline: 3px solid var(--focus);
+            outline-offset: 3px;
+        }
 
-        .game-area { background: white; border-radius: 30px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; }
-        .game-area.active { display: block; }
-
-        .card-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 30px 0; }
-        .card { width: 150px; height: 180px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-        .card-front { background: linear-gradient(145deg, #FF9A9E, #FECFEF); font-size: 4em; }
-        .card-back { background: linear-gradient(145deg, #A8EDEA, #FED6E3); font-size: 2em; color: #333; }
-
-        .progress-bar { width: 100%; height: 30px; background: #f0f0f0; border-radius: 15px; overflow: hidden; margin: 20px 0; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 15px; transition: width 0.5s; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
-
-        .back-btn { padding: 15px 30px; font-size: 1.2em; border: none; border-radius: 10px; background: #667eea; color: white; cursor: pointer; margin: 5px; }
-
-        .category-tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
-        .category-tab { padding: 10px 20px; border: none; border-radius: 20px; cursor: pointer; font-size: 1.1em; background: #f0f0f0; }
-        .category-tab.active { background: #667eea; color: white; }
-
-        .score { font-size: 1.5em; text-align: center; margin: 20px 0; }
-        .emoji { font-size: 3em; text-align: center; }
-
-        .options { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
-        .option-btn { padding: 20px 30px; font-size: 1.5em; border: none; border-radius: 15px; cursor: pointer; background: #f0f0f0; transition: all 0.3s; }
-        .option-btn:hover { background: #667eea; color: white; }
-        .option-btn.correct { background: #4ECDC4 !important; color: white !important; }
-        .option-btn.wrong { background: #FF6B6B !important; color: white !important; }
-
-        .encourage { font-size: 2em; text-align: center; color: #667eea; margin: 20px 0; }
-
-        .matching-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-width: 600px; margin: 0 auto; }
-        .matching-card { aspect-ratio: 1; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5em; cursor: pointer; transition: all 0.3s; }
-        .matching-card:hover { transform: scale(1.05); }
-        .matching-card.selected { border: 3px solid #667eea; }
-        .matching-card.matched { opacity: 0; pointer-events: none; }
-
-        .add-word-form { display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 0 auto; }
-        .add-word-form input { padding: 15px; font-size: 1.2em; border: 2px solid #ddd; border-radius: 10px; }
-        .add-word-form button { padding: 15px; font-size: 1.3em; border: none; border-radius: 10px; background: #4ECDC4; color: white; cursor: pointer; }
-
-        .speak-btn {
-            background: #667eea;
-            color: white;
+        /* ============================================================
+           主選單
+           ============================================================ */
+        .menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: clamp(0.65rem, 1.2vw, 1.1rem); justify-items: stretch; margin-bottom: clamp(1.1rem, 2.2vw, 2rem); }
+        .menu-btn {
+            width: 100%;
+            min-height: var(--tap);
+            padding: clamp(0.8rem, 1.4vw, 1.25rem) clamp(1rem, 2vw, 2.5rem);
+            font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.45rem);
+            font-weight: 700;
             border: none;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            font-size: 1em;
+            border-radius: var(--r-md);
             cursor: pointer;
-            display: inline-flex;
+            transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+            box-shadow: 0 6px 0 rgba(0,0,0,.2), var(--sh-2);
+        }
+        .menu-btn:hover { transform: translateY(-3px); filter: brightness(1.04); box-shadow: 0 9px 0 rgba(0,0,0,.18), var(--sh-3); }
+        .menu-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.2); }
+        .btn-flashcards { background: var(--red-soft); color: #fff; }
+        .btn-quiz { background: var(--mint); color: #0b3b34; }
+        .btn-matching { background: var(--yellow); color: #333; }
+        .btn-add { background: var(--mint-soft); color: #333; }
+        .btn-dictation { background: var(--gold); color: #333; }
+
+        /* ============================================================
+           遊戲區塊
+           ============================================================ */
+        .game-area {
+            background: var(--surface);
+            color: var(--ink);
+            border-radius: var(--r-lg);
+            padding: clamp(1.1rem, 2.2vw, 2rem);
+            box-shadow: var(--sh-3);
+            border: 1px solid rgba(255,255,255,.45);
+            display: none;
+        }
+        .game-area.active { display: block; animation: areaIn .3s ease both; }
+        @keyframes areaIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        /* ============================================================
+           認字卡
+           ============================================================ */
+        .card-container { display: flex; flex-wrap: wrap; gap: clamp(1rem, 2vw, 1.75rem); justify-content: center; margin: clamp(1.25rem, 2.4vw, 2rem) 0; }
+        .card {
+            position: relative;
+            width: clamp(9rem, 26vw, 15rem);
+            aspect-ratio: 5 / 6;
+            height: auto;
+            min-height: 0;
+            border-radius: var(--r-md);
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin-left: 8px;
-            transition: all 0.3s;
-            flex-shrink: 0;
+            cursor: pointer;
+            border: 3px solid rgba(255,255,255,.7);
+            box-shadow: var(--sh-2);
+            transition: transform .25s ease, box-shadow .25s ease;
         }
-        .speak-btn:hover { transform: scale(1.1); background: #764ba2; }
+        .card:hover { transform: translateY(-6px) rotate(-0.6deg); box-shadow: var(--sh-3); }
+        .card:active { transform: translateY(-1px) scale(.98); }
+        .card-front { background: linear-gradient(145deg, #FF9A9E, #FECFEF); font-size: 4em; }
+        /* 類別未有字詞時的提示卡：單獨一張卡時改為可自由增高，避免文字溢出 */
+        .card-container > .card:only-child {
+            font-size: 1.15em;
+            line-height: 1.5;
+            aspect-ratio: auto;
+            min-height: 11rem;
+            height: auto;
+            padding: 1.75rem 1.5rem !important;
+            color: #5f5a6b !important;
+        }
         .card-back {
+            background: linear-gradient(145deg, #A8EDEA, #FED6E3);
+            font-size: 2em;
+            color: #333;
             text-align: center;
             padding: 10px;
             display: flex;
@@ -85,95 +174,308 @@
             justify-content: center;
             gap: 5px;
         }
-        .word-row {
+        .word-row { display: flex; align-items: center; justify-content: center; }
+        .word-text { font-size: 1.5em; font-weight: 800; color: #2f2c3f; letter-spacing: .02em; }
+        .word-english { font-size: .8em; color: #5d5a75; font-weight: 600; }
+
+        /* ============================================================
+           進度條
+           ============================================================ */
+        .progress-bar {
+            width: 100%;
+            height: clamp(1.8rem, 1.5rem + 1vw, 2.4rem);
+            background: var(--surface-3);
+            border-radius: var(--r-pill);
+            overflow: hidden;
+            margin: clamp(1rem, 2vw, 1.5rem) 0;
+            border: 1px solid var(--line);
+            box-shadow: inset 0 2px 6px rgba(31,26,73,.12);
+        }
+        .progress-fill {
+            height: 100%;
+            min-width: 3.4rem;
+            background: linear-gradient(90deg, #5b6ee0, #764ba2);
+            border-radius: var(--r-pill);
+            transition: width .5s cubic-bezier(.22,.9,.3,1);
             display: flex;
             align-items: center;
             justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: .88em;
+            text-shadow: 0 1px 2px rgba(0,0,0,.35);
+            white-space: nowrap;
         }
-        .word-text { font-size: 1.5em; font-weight: bold; }
-        .word-english { font-size: 0.8em; color: #666; }
-        .quiz-speak-btn {
-            padding: 10px 20px;
-            font-size: 1.2em;
+
+        /* ============================================================
+           返回按鈕與其他按鈕
+           ============================================================ */
+        .back-btn {
+            min-height: var(--tap);
+            padding: clamp(0.7rem, 1.1vw, 1rem) clamp(1.1rem, 2vw, 1.9rem);
+            font-size: clamp(1rem, 0.92rem + 0.4vw, 1.2rem);
+            font-weight: 700;
             border: none;
-            border-radius: 15px;
-            background: #FFE66D;
+            border-radius: var(--r-sm);
+            background: var(--brand-grad);
+            color: #fff;
+            cursor: pointer;
+            margin: 5px;
+            box-shadow: 0 4px 12px rgba(102,126,234,.28);
+            transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+        }
+        .back-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(102,126,234,.34); filter: brightness(1.04); }
+        .back-btn:active { transform: translateY(1px); box-shadow: 0 2px 6px rgba(102,126,234,.24); }
+        .back-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
+
+        .quiz-speak-btn {
+            min-height: var(--tap);
+            padding: .7rem 1.2rem;
+            font-size: clamp(1rem, 0.95rem + 0.35vw, 1.2rem);
+            font-weight: 700;
+            border: none;
+            border-radius: var(--r-md);
+            background: var(--yellow);
             color: #333;
             cursor: pointer;
-            margin-top: 15px;
+            margin-top: .75rem;
+            box-shadow: var(--sh-1);
+            transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
         }
-        .quiz-speak-btn:hover { background: #FFD93D; }
+        .quiz-speak-btn:hover { background: var(--yellow-strong); transform: translateY(-2px); box-shadow: var(--sh-2); }
+        .quiz-speak-btn:active { transform: translateY(1px); }
 
-        /* Quantity Slider */
+        .speak-btn {
+            background: var(--brand-grad);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: var(--tap);
+            height: var(--tap);
+            min-width: var(--tap);
+            min-height: var(--tap);
+            font-size: 1.15em;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px;
+            transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+            flex-shrink: 0;
+            box-shadow: var(--sh-1);
+        }
+        .speak-btn:hover { transform: scale(1.08); background: var(--brand-strong); box-shadow: var(--sh-2); }
+        .speak-btn:active { transform: scale(.96); }
+
+        /* ============================================================
+           分類標籤（sticky + 窄屏橫向捲動 + 闊屏平均分佈）
+           ============================================================ */
+        .category-tabs {
+            position: sticky;
+            top: calc(env(safe-area-inset-top, 0px) + .5rem);
+            z-index: 30;
+            display: flex;
+            gap: .55rem;
+            justify-content: flex-start;
+            margin: 0 0 1.1rem;
+            padding: .55rem .4rem .7rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scroll-snap-type: x proximity;
+            background: var(--surface);
+            background: color-mix(in srgb, var(--surface) 88%, transparent);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-radius: var(--r-md);
+            border: 1px solid var(--line);
+            box-shadow: var(--sh-1);
+        }
+        .category-tabs::-webkit-scrollbar { height: 6px; }
+        .category-tabs::-webkit-scrollbar-thumb { background: rgba(120,120,160,.35); border-radius: var(--r-pill); }
+        .category-tab {
+            flex: 0 0 auto;
+            min-height: var(--tap);
+            padding: .55rem 1.05rem;
+            border: 2px solid transparent;
+            border-radius: var(--r-pill);
+            cursor: pointer;
+            font-size: clamp(.95rem, .9rem + .25vw, 1.1rem);
+            font-weight: 600;
+            background: var(--surface-3);
+            color: var(--ink);
+            scroll-snap-align: center;
+            box-shadow: var(--sh-1);
+            transition: transform .2s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
+        }
+        .category-tab:hover { background: var(--brand-grad-soft); color: #fff; transform: translateY(-2px); }
+        .category-tab.active {
+            background: var(--brand-grad);
+            color: #fff;
+            border-color: rgba(255,255,255,.7);
+            box-shadow: var(--sh-brand);
+            transform: translateY(-1px);
+        }
+        .category-tab:active { transform: translateY(0) scale(.98); }
+
+        /* ============================================================
+           分數、圖示與鼓勵文字
+           ============================================================ */
+        .score { font-size: clamp(1.25rem, 1.05rem + 0.7vw, 1.65rem); font-weight: 700; text-align: center; margin: 1rem 0; }
+        .emoji { font-size: clamp(3rem, 2rem + 4vw, 5.5rem); text-align: center; line-height: 1.15; }
+        .encourage { font-size: clamp(1.35rem, 1.1rem + 0.9vw, 2rem); font-weight: 700; text-align: center; color: var(--brand-ink); margin: 1.2rem 0; min-height: 1.4em; }
+
+        /* ============================================================
+           估估吓選項（窄屏一列、闊屏 2×2）
+           ============================================================ */
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: clamp(.7rem, 1.2vw, 1rem);
+            width: 100%;
+            max-width: 46rem;
+            margin: 0 auto;
+        }
+        .option-btn {
+            min-height: calc(var(--tap) + .5rem);
+            padding: clamp(.8rem, 1.3vw, 1.2rem) clamp(1rem, 1.8vw, 1.6rem);
+            font-size: clamp(1.1rem, 1rem + 0.55vw, 1.5rem);
+            font-weight: 700;
+            border: 2px solid var(--line);
+            border-radius: var(--r-md);
+            cursor: pointer;
+            background: var(--surface-3);
+            color: var(--ink);
+            text-align: center;
+            box-shadow: var(--sh-1);
+            transition: transform .2s ease, background .2s ease, color .2s ease, box-shadow .2s ease;
+        }
+        .option-btn:hover { background: var(--brand-grad-soft); color: #fff; transform: translateY(-3px); box-shadow: var(--sh-2); }
+        .option-btn:active { transform: translateY(1px); }
+        .option-btn.correct { background: var(--mint) !important; color: #0b3b34 !important; border-color: transparent; }
+        .option-btn.wrong { background: var(--red) !important; color: #fff !important; border-color: transparent; }
+        .option-btn:disabled { cursor: default; opacity: .85; transform: none; }
+        /* 讀默開始按鈕與讀音按鈕所屬的容器行需跨欄置中 */
+        .options > .back-btn { grid-column: 1 / -1; justify-self: center; }
+        .options > div { grid-column: 1 / -1; }
+
+        /* ============================================================
+           配對遊戲
+           ============================================================ */
+        .matching-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: clamp(.65rem, 1.3vw, 1rem);
+            max-width: 46rem;
+            margin: 0 auto;
+        }
+        .matching-card {
+            aspect-ratio: 1;
+            min-height: var(--tap);
+            border-radius: var(--r-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: .4rem;
+            font-size: clamp(1.05rem, .95rem + .5vw, 1.5rem);
+            font-weight: 700;
+            color: #2f2c3f;
+            cursor: pointer;
+            border: 3px solid transparent;
+            box-shadow: var(--sh-1);
+            transition: transform .25s ease, box-shadow .25s ease, opacity .35s ease, border-color .2s ease;
+        }
+        .matching-card:hover { transform: translateY(-3px) scale(1.03); box-shadow: var(--sh-2); }
+        .matching-card.selected { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(102,126,234,.28), var(--sh-2); transform: scale(1.05); }
+        .matching-card.matched { opacity: 0; pointer-events: none; transform: scale(.85); }
+
+        /* ============================================================
+           加字詞表單
+           ============================================================ */
+        .add-word-form { display: flex; flex-direction: column; gap: clamp(.65rem, 1.1vw, .9rem); max-width: 26rem; margin: 0 auto; }
+        .add-word-form input {
+            min-height: var(--tap);
+            padding: .8rem 1rem;
+            font-size: clamp(1rem, .95rem + .25vw, 1.2rem);
+            border: 2px solid var(--line);
+            border-radius: var(--r-sm);
+            background: var(--field-bg);
+            color: var(--ink);
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .add-word-form input::placeholder { color: var(--ink-soft); opacity: 1; }
+        .add-word-form input:focus-visible { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(102,126,234,.22); outline: none; }
+        .add-word-form button {
+            min-height: var(--tap);
+            padding: .85rem 1rem;
+            font-size: clamp(1.05rem, 1rem + 0.3vw, 1.3rem);
+            font-weight: 700;
+            border: none;
+            border-radius: var(--r-sm);
+            background: var(--mint);
+            color: #0b3b34;
+            cursor: pointer;
+            box-shadow: var(--sh-1);
+            transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+        }
+        .add-word-form button:hover { transform: translateY(-2px); box-shadow: var(--sh-2); filter: brightness(1.05); }
+        .add-word-form button:active { transform: translateY(1px); }
+
+        /* ============================================================
+           題目數量滑桿
+           ============================================================ */
         .quantity-control {
-            background: #f8f8f8;
-            border-radius: 15px;
-            padding: 15px 20px;
-            margin: 15px auto;
-            max-width: 400px;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-md);
+            padding: clamp(.9rem, 1.5vw, 1.25rem) clamp(1rem, 1.8vw, 1.5rem);
+            margin: 1rem auto;
+            max-width: 28rem;
         }
         .quantity-label {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            font-size: 1.2em;
-            color: #667eea;
+            margin-bottom: .6rem;
+            font-size: clamp(1rem, .95rem + .3vw, 1.2rem);
+            font-weight: 700;
+            color: var(--brand-ink);
         }
         .quantity-slider {
             width: 100%;
-            height: 12px;
-            border-radius: 6px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 18px;
+            margin: .25rem 0 .85rem;
+            border-radius: var(--r-pill);
+            background: linear-gradient(90deg, #5b6ee0 0%, #764ba2 100%);
             outline: none;
             -webkit-appearance: none;
+            appearance: none;
         }
         .quantity-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 30px;
-            height: 30px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background: white;
-            border: 3px solid #667eea;
+            border: 3px solid var(--brand);
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 6px rgba(0,0,0,.3);
         }
         .quantity-slider::-moz-range-thumb {
-            width: 30px;
-            height: 30px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background: white;
-            border: 3px solid #667eea;
+            border: 3px solid var(--brand);
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 6px rgba(0,0,0,.3);
         }
 
-        .card { position: relative; }
-
-        /* ========== Mobile Responsive (M3) ==========
-           Without these guards, matching cards and buttons can overflow the
-           viewport on narrow screens (5yo tablets / phones). The grid drops
-           to 2 columns and per-element max-width keeps everything inside. */
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            .container { max-width: 100%; }
-            h1 { font-size: 1.8em; margin-bottom: 12px; }
-            .menu { gap: 10px; margin-bottom: 20px; }
-            .menu-btn { padding: 14px 22px; font-size: 1.15em; }
-            .game-area { padding: 18px; border-radius: 20px; }
-            .matching-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 100%; }
-            .matching-card { font-size: 1.1em !important; max-width: 100%; box-sizing: border-box; }
-            .card { max-width: 100%; box-sizing: border-box; height: auto; min-height: 160px; }
-            .option-btn { padding: 14px 18px; font-size: 1.15em; }
-            .add-word-form input { font-size: 1em; padding: 12px; }
-            .add-word-form button { font-size: 1.1em; padding: 12px; }
-            .back-btn { padding: 12px 20px; font-size: 1em; }
-        }
-
-        /* ========== Completion Modal (M4) ==========
-           Bouncy fade+pop animation so a small win feels rewarding. Using a
-           custom modal avoids the blocking native dialog, which is friendlier
-           for a 5-year-old using a touchscreen tablet. */
+        /* ============================================================
+           完成提示視窗
+           ============================================================ */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -182,10 +484,12 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
+            padding: max(1rem, env(safe-area-inset-right, 0px)) max(1rem, env(safe-area-inset-left, 0px));
             animation: modalFadeIn 0.3s ease both;
         }
         .modal-content {
-            background: white;
+            background: var(--surface);
+            color: var(--ink);
             padding: 30px 40px;
             border-radius: 20px;
             text-align: center;
@@ -200,6 +504,112 @@
         @keyframes modalPopIn {
             from { transform: scale(0.7); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
+        }
+
+        /* ============================================================
+           平板與桌面版
+           ============================================================ */
+        @media (min-width: 620px) {
+            /* 闊屏選項改為 2×2 排列 */
+            .options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            /* 配對卡回到四欄並放大 */
+            .matching-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+
+        @media (min-width: 900px) {
+            /* 闊屏分類標籤平均分佈（可換行、不再需要橫向捲動） */
+            .category-tabs {
+                flex-wrap: wrap;
+                justify-content: center;
+                overflow-x: visible;
+                scroll-snap-type: none;
+                padding: .7rem .8rem .85rem;
+            }
+            .category-tab { flex: 0 1 auto; }
+        }
+
+        @media (min-width: 1024px) {
+            .container { max-width: 1120px; }
+            .game-area { padding: 2rem 2.25rem; }
+        }
+
+        /* ============================================================
+           手機版（保持原有易用性並收窄版面）
+           ============================================================ */
+        @media (max-width: 600px) {
+            body {
+                padding: max(.75rem, calc(env(safe-area-inset-top, 0px) + .5rem))
+                         max(.75rem, calc(env(safe-area-inset-right, 0px) + .5rem))
+                         max(.75rem, calc(env(safe-area-inset-bottom, 0px) + .5rem))
+                         max(.75rem, calc(env(safe-area-inset-left, 0px) + .5rem));
+            }
+            h1 { font-size: clamp(1.6rem, 1.3rem + 2vw, 2rem); }
+            .menu { gap: .55rem; margin-bottom: 1rem; }
+            .menu-btn { padding: .8rem 1rem; font-size: 1.05rem; }
+            .game-area { padding: 1rem; border-radius: 20px; }
+            .card { width: min(8.5rem, 40vw); }
+            .option-btn { font-size: 1.1rem; }
+            .add-word-form input { font-size: 1rem; }
+            .add-word-form button { font-size: 1.1rem; }
+            .back-btn { padding: .7rem 1.1rem; font-size: 1rem; }
+        }
+
+        /* ============================================================
+           深色模式（跟隨系統設定）
+           亮色底板區塊維持原有淺色底，以確保內嵌文字對比度不變。
+           ============================================================ */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --brand-ink: #aab5ff;
+                --ink: #eceafd;
+                --ink-soft: #b9b5d1;
+                --surface: #211f33;
+                --surface-2: #2a2742;
+                --surface-3: #342f52;
+                --field-bg: #191727;
+                --line: #413c66;
+                --brand-grad: linear-gradient(135deg, #6d7ef0, #8f62d8);
+                --brand-grad-soft: linear-gradient(135deg, #6d7ef0, #8f62d8);
+            }
+            body { background: linear-gradient(135deg, #2b2455 0%, #3d2a63 100%); }
+            .game-area { border-color: rgba(255,255,255,.08); }
+            .card { border-color: rgba(255,255,255,.25); }
+            .category-tabs { background: color-mix(in srgb, var(--surface) 86%, transparent); }
+            /* 配對卡維持淺色底，文字用深色以確保可讀 */
+            .matching-card { color: #2f2c3f; }
+            /* 視窗內文為內聯樣式，需以 !important 覆寫以免深色底上看不到 */
+            #completion-modal .modal-content p { color: var(--ink) !important; }
+        }
+
+        /* ============================================================
+           尊重系統的減少動態效果設定
+           ============================================================ */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .001ms !important;
+                transition-delay: 0ms !important;
+                scroll-behavior: auto !important;
+            }
+            .card:hover,
+            .card:active,
+            .menu-btn:hover,
+            .category-tab:hover,
+            .category-tab.active,
+            .category-tab:active,
+            .option-btn:hover,
+            .option-btn:active,
+            .matching-card:hover,
+            .matching-card.selected,
+            .back-btn:hover,
+            .back-btn:active,
+            .speak-btn:hover,
+            .speak-btn:active,
+            .quiz-speak-btn:hover,
+            .quiz-speak-btn:active,
+            .add-word-form button:hover,
+            .add-word-form button:active { transform: none !important; }
         }
     </style>
 </head>
@@ -218,7 +628,7 @@
         <!-- Flashcards -->
         <div id="flashcards" class="game-area">
             <h2 style="text-align: center; color: #667eea;">🃏 認字卡</h2>
-            <div class="category-tabs" id="fc-tabs"></div>
+            <div class="category-tabs" id="fc-tabs" role="group" aria-label="認字卡分類"></div>
 
             <!-- Quantity Slider for K2第二段中文 & K2第二段英文 -->
             <div id="fc-quantity-control" class="quantity-control" style="display:none;">
@@ -238,7 +648,7 @@
             <div class="progress-bar"><div class="progress-fill" id="fc-progress" style="width: 0%">0/0</div></div>
             <div class="card-container" id="fc-container"></div>
             <div style="text-align: center; margin-top: 20px;">
-                <div id="fc-score" style="font-size: 1.2em; margin-bottom: 15px; color: #667eea;">✅ 0 | ❌ 0</div>
+                <div id="fc-score" aria-live="polite" style="font-size: 1.2em; margin-bottom: 15px; color: #667eea;">✅ 0 | ❌ 0</div>
                 <div id="fc-buttons">
                     <button class="back-btn" style="background: #FF6B6B; font-size: 1.5em; padding: 15px 30px;" onclick="markWrong()" aria-label="答錯">❌</button>
                     <button class="back-btn" style="background: #4ECDC4; font-size: 1.5em; padding: 15px 30px;" onclick="markCorrect()" aria-label="答啱">✅</button>
@@ -252,7 +662,7 @@
         <!-- Quiz -->
         <div id="quiz" class="game-area">
             <h2 style="text-align: center; color: #4ECDC4;">❓ 估估吓邊個啱?</h2>
-            <div class="category-tabs" id="quiz-tabs"></div>
+            <div class="category-tabs" id="quiz-tabs" role="group" aria-label="估估吓分類"></div>
 
             <!-- Quantity Slider for K2第二段中文 & K2第二段英文 -->
             <div id="quantity-control" class="quantity-control" style="display:none;">
@@ -263,27 +673,27 @@
                 <input type="range" id="quantity-slider" class="quantity-slider" min="1" max="100" value="10" onchange="updateQuantity(this.value)">
             </div>
 
-            <div class="score" id="quiz-score">⭐ 0</div>
+            <div class="score" id="quiz-score" aria-live="polite">⭐ 0</div>
             <div style="text-align: center; margin: 30px 0;">
                 <div class="emoji" id="quiz-emoji">🍎</div>
                 <div id="quiz-prompt" style="font-size: 1.5em; color: #667eea; margin-top: 15px;">呢個係咩字?</div>
             </div>
             <div class="options" id="quiz-options"></div>
-            <div class="encourage" id="quiz-encourage"></div>
+            <div class="encourage" id="quiz-encourage" aria-live="polite"></div>
         </div>
 
         <!-- Matching -->
         <div id="matching" class="game-area">
             <h2 style="text-align: center; color: #FFE66D;">🔗 圖文配對</h2>
-            <div class="category-tabs" id="match-tabs"></div>
-            <div class="score" id="match-score">⭐ 0</div>
+            <div class="category-tabs" id="match-tabs" role="group" aria-label="配對分類"></div>
+            <div class="score" id="match-score" aria-live="polite">⭐ 0</div>
             <div class="matching-grid" id="match-grid"></div>
         </div>
 
         <!-- Dictation -->
         <div id="dictation" class="game-area">
             <h2 style="text-align: center; color: #F7DC6F;">📝 句子讀默</h2>
-            <div class="category-tabs" id="dict-tabs"></div>
+            <div class="category-tabs" id="dict-tabs" role="group" aria-label="句子讀默分類"></div>
             <div id="dict-quantity-control" class="quantity-control" style="display:none;">
                 <div class="quantity-label">
                     <span>📊 題目數量</span>
@@ -293,14 +703,14 @@
             </div>
             <div class="progress-bar"><div class="progress-fill" id="dict-progress" style="width: 0%">0/0</div></div>
             <div style="text-align: center; margin: 20px 0;">
-                <div id="dict-score" style="font-size: 1.3em; color: #667eea; margin-bottom: 15px;">✅ 0 | ❌ 0</div>
+                <div id="dict-score" aria-live="polite" style="font-size: 1.3em; color: #667eea; margin-bottom: 15px;">✅ 0 | ❌ 0</div>
                 <div id="dict-sentence" style="font-size: 1.3em; color: #333; background: #f8f8f8; padding: 20px; border-radius: 15px; margin: 15px 0; min-height: 80px; display: flex; align-items: center; justify-content: center;"></div>
                 <div id="dict-hint" style="font-size: 1em; color: #888; margin-bottom: 15px;"></div>
                 <div style="margin: 15px 0;">
                     <button class="back-btn" style="background: #667eea; font-size: 1.3em; padding: 15px 30px;" onclick="playDictSentence()">🔊 聽句子</button>
                 </div>
                 <div id="dict-options" class="options" style="margin-top: 20px;"></div>
-                <div class="encourage" id="dict-encourage" style="margin-top: 15px;"></div>
+                <div class="encourage" id="dict-encourage" aria-live="polite" style="margin-top: 15px;"></div>
             </div>
             <div style="text-align: center; margin-top: 20px;">
                 <div id="dict-review-btn" style="display: none; margin-top: 15px;"></div>
