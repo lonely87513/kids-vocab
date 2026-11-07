@@ -333,7 +333,31 @@
             setTimeout(() => window.speechSynthesis.getVoices(), 100);
             setTimeout(() => window.speechSynthesis.getVoices(), 300);
             setTimeout(() => window.speechSynthesis.getVoices(), 600);
+            // Defer so the voice-scoring constants below are initialised first
+            if (voices && voices.length > 0) setTimeout(() => dumpTTSVoices(voices), 0);
         }
+
+        // Diagnostics: one-line summary of the voices this browser exposes, so
+        // a strange pronunciation can be diagnosed from the console alone.
+        // Run `dumpTTSVoices()` in the console at any time to reprint it.
+        function dumpTTSVoices(voices) {
+            try {
+                const list = voices || (window.speechSynthesis ? window.speechSynthesis.getVoices() : []);
+                if (!list || list.length === 0) return;
+                const en = list.filter(v => (v.lang || '').toLowerCase().startsWith('en'));
+                const zh = list.filter(v => /^(yue|zh|cmn)/i.test((v.lang || '').toLowerCase()));
+                const pickEn = pickBestEnglishVoice(list);
+                const pickZh = pickBestChineseVoice(list);
+                console.info('[TTS] English voices: ' + (en.map(v => `${v.name} | ${v.lang}`).join(' / ') || 'none'));
+                console.info('[TTS] Chinese voices: ' + (zh.map(v => `${v.name} | ${v.lang}`).join(' / ') || 'none'));
+                console.info('[TTS] Picked → EN: ' + (pickEn ? `${pickEn.name} | ${pickEn.lang}` : 'device default')
+                    + '  |  ZH: ' + (pickZh ? `${pickZh.name} | ${pickZh.lang}` : 'device default'));
+                window.__ttsLogged = true;
+            } catch (e) {
+                console.warn('dumpTTSVoices failed:', e);
+            }
+        }
+        window.dumpTTSVoices = dumpTTSVoices;
         // Try to load voices early
         if (window.speechSynthesis) {
             window.speechSynthesis.onvoiceschanged = preloadVoices;
@@ -366,14 +390,34 @@
         // Returns null if nothing Chinese-shaped is found, so the caller can let
         // the SpeechSynthesisUtterance fall back to the device default language
         // (which is normally correct on the user's own phone anyway).
+        //
+        // Within the same language family we now SCORE the candidates instead of
+        // taking the first one: macOS ships three older Cantonese voices
+        // (善怡 Sin-ji / 李慕 Li-mu / 雲龍 Wan-lung) plus the newer, clearly
+        // more natural 美佳 Meijia ("Premium"). Taking "the first yue-HK voice"
+        // frequently landed on 善怡, which is the weakest of them.
+        const CHINESE_VOICE_PREFERRED_NAME = /美佳|meijia|premium|進階|enhanced/i;
+        const CHINESE_VOICE_LEGACY_NAME = /善怡|sin-ji|sinji|李慕|li-mu|limu|雲龍|wan-lung|wanlung/i;
+        function scoreChineseVoice(v) {
+            const name = v.name || '';
+            let s = 0;
+            if (CHINESE_VOICE_PREFERRED_NAME.test(name)) s += 60;
+            if (CHINESE_VOICE_LEGACY_NAME.test(name)) s -= 25;
+            if (v.localService) s += 5;
+            return s;
+        }
         function pickBestChineseVoice(voices) {
             if (!voices || voices.length === 0) return null;
             const lc = v => (v.lang || '').toLowerCase();
             // Priority order: Cantonese first, then traditional/simplified Chinese variants
             const priorities = ['yue', 'zh-hk', 'zh-hant', 'zh-tw', 'zh-cn', 'zh', 'cmn'];
             for (const code of priorities) {
-                const v = voices.find(v => lc(v).startsWith(code) || lc(v).includes('-' + code));
-                if (v) return v;
+                const matches = voices.filter(v => lc(v).startsWith(code) || lc(v).includes('-' + code));
+                if (matches.length === 0) continue;
+                // Same language family → pick the best-scoring voice inside it.
+                return matches
+                    .map(v => ({ v, s: scoreChineseVoice(v) }))
+                    .sort((a, b) => b.s - a.s)[0].v;
             }
             return null;
         }
