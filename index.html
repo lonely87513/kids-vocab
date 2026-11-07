@@ -138,7 +138,9 @@
             width: clamp(9rem, 26vw, 15rem);
             aspect-ratio: 5 / 6;
             height: auto;
-            min-height: 0;
+            /* min-height 唔設 0：咁卡片先會跟內容增高（長詞如「Chung Yeung Festival」
+               會斷成兩行），唔會被 aspect-ratio 裁走；overflow:hidden 只作最後保險 */
+            min-height: auto;
             border-radius: var(--r-md);
             display: flex;
             flex-direction: column;
@@ -148,10 +150,17 @@
             border: 3px solid rgba(255,255,255,.7);
             box-shadow: var(--sh-2);
             transition: transform .25s ease, box-shadow .25s ease;
+            /* 內容一律唔可以漏出卡片（2026-11-07 修正：長詞如「重陽節」/「crayon」會爆出去） */
+            overflow: hidden;
+            padding: .5rem;
         }
         .card:hover { transform: translateY(-6px) rotate(-0.6deg); box-shadow: var(--sh-3); }
         .card:active { transform: translateY(-1px) scale(.98); }
-        .card-front { background: linear-gradient(145deg, #FF9A9E, #FECFEF); font-size: 4em; }
+        /* 底層字級已回復 1rem（原本 4em），emoji 大細改由 JS 直接用 rem 指定，
+           避免「父層 em × 內層 em」疊乘成 90–100px 而爆卡 */
+        .card-front { background: linear-gradient(145deg, #FF9A9E, #FECFEF); font-size: 1rem; }
+        /* 卡片正面內容（emoji / 中文對照）唔可以超過卡片闊度 */
+        .card-front > div { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
         /* 類別未有字詞時的提示卡：單獨一張卡時改為可自由增高，避免文字溢出 */
         .card-container > .card:only-child {
             font-size: 1.15em;
@@ -164,19 +173,19 @@
         }
         .card-back {
             background: linear-gradient(145deg, #A8EDEA, #FED6E3);
-            font-size: 2em;
+            font-size: 1rem;
             color: #333;
             text-align: center;
-            padding: 10px;
+            padding: .6rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 5px;
+            gap: .35rem;
         }
-        .word-row { display: flex; align-items: center; justify-content: center; }
-        .word-text { font-size: 1.5em; font-weight: 800; color: #2f2c3f; letter-spacing: .02em; }
-        .word-english { font-size: .8em; color: #5d5a75; font-weight: 600; }
+        .word-row { display: flex; align-items: center; justify-content: center; gap: .4rem; max-width: 100%; flex-wrap: wrap; }
+        .word-text { font-size: clamp(1.05rem, .95rem + .45vw, 1.35rem); font-weight: 800; color: #2f2c3f; letter-spacing: .02em; line-height: 1.25; text-align: center; overflow-wrap: anywhere; max-width: 100%; }
+        .word-english { font-size: clamp(.7rem, .66rem + .2vw, .86rem); color: #5d5a75; font-weight: 600; line-height: 1.35; text-align: center; overflow-wrap: anywhere; max-width: 100%; }
 
         /* ============================================================
            進度條
@@ -444,11 +453,15 @@
             color: var(--brand-ink);
         }
         .quantity-slider {
-            width: 100%;
-            height: 18px;
-            margin: .25rem 0 .85rem;
+            width: calc(100% - 1.5rem);
+            margin: .25rem auto .85rem;
+            /* 44px 高嘅軌 + 背景只畫中間 18px，令 44px 嘅滑鉤唔會上下溢出 */
+            height: 44px;
             border-radius: var(--r-pill);
             background: linear-gradient(90deg, #5b6ee0 0%, #764ba2 100%);
+            background-size: 100% 18px;
+            background-repeat: no-repeat;
+            background-position: center;
             outline: none;
             -webkit-appearance: none;
             appearance: none;
@@ -1437,6 +1450,16 @@
 
         function getCategories() { return Object.keys(vocabulary); }
 
+        // 分類標籤列在窄屏可以橫向捲動；切換分類時自動把當前分類捲入畫面，
+        // 避免使用者在看不到的分頁上（2026-11-07 修正）
+        function scrollActiveTabIntoView(container) {
+            if (!container) return;
+            const active = container.querySelector('.category-tab.active');
+            if (active && typeof active.scrollIntoView === 'function') {
+                active.scrollIntoView({ block: 'nearest', inline: 'center' });
+            }
+        }
+
         // Learning-category helpers - single source of truth for the
         // "is this category one of the K2 / K3 第二段・第三段 中文/英文 sets?"
         // check that used to be duplicated inline in 7 places. Returns
@@ -1492,6 +1515,7 @@
                 btn.addEventListener('click', () => switchCategory(cat));
                 fcTabs.appendChild(btn);
             });
+            scrollActiveTabIntoView(fcTabs);
 
             // Reset score display
             document.getElementById('fc-score').textContent = '✅ 0 | ❌ 0';
@@ -1611,7 +1635,9 @@
             document.getElementById('fc-progress').textContent = `${currentCard + 1}/${flashcardWords.length}`;
 
             // Smaller emoji for learning categories to avoid blocking buttons
-            const emojiSize = (isEnglish || isChineseLearning) ? '0.9em' : '4em';
+            // 2026-11-07: 用 rem 絕對值（父層 .card-front 已回復 1rem），
+            // 否則「父層 em × 內層 em」會疊成 90–100px 而爆卡。
+            const emojiSize = (isEnglish || isChineseLearning) ? '3rem' : '4.4rem';
 
             if (isEnglish) {
                 document.getElementById('fc-container').innerHTML = `
@@ -1829,6 +1855,7 @@
                 btn.addEventListener('click', () => switchQuizCategory(cat));
                 quizTabs.appendChild(btn);
             });
+            scrollActiveTabIntoView(quizTabs);
 
             // Use quantity limit
             const allWords = shuffle([...vocabulary[currentCategory]]);
@@ -1867,6 +1894,7 @@
                 btn.addEventListener('click', () => switchQuizCategory(c));
                 quizTabs.appendChild(btn);
             });
+            scrollActiveTabIntoView(quizTabs);
 
             // Update slider visibility and values
             const isLearningCat = isLearningCategory(currentCategory);
@@ -1955,6 +1983,7 @@
                 });
                 matchTabs.appendChild(btn);
             });
+            scrollActiveTabIntoView(matchTabs);
 
             const words = shuffle([...vocabulary[currentCategory]]).slice(0, 4);
             const pairs = [];
@@ -2160,6 +2189,7 @@
                 btn.addEventListener('click', () => switchDictCategory(cat));
                 dictTabs.appendChild(btn);
             });
+            scrollActiveTabIntoView(dictTabs);
 
             // Show quantity control
             document.getElementById('dict-quantity-control').style.display = 'block';
