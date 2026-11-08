@@ -2279,10 +2279,17 @@
         // 內容：標題、日期時間、學習分類、答對／答錯、正確率、星星、錯題清單、專案名。
         // ============================================================
         const RESULT_CANVAS_WIDTH = 1080;
-        const RESULT_CANVAS_HEIGHT = 1350;
+        const RESULT_CANVAS_BASE_HEIGHT = 1350;   // 基礎高度（錯題少時使用）
+        const RESULT_LIST_TOP = 800;              // 錯題清單方塊頂部
+        const RESULT_LIST_TITLE_H = 116;          // 清單標題高度
+        const RESULT_ROW_H = 40;                  // 每行高度
+        const RESULT_LIST_PAD_BOTTOM = 52;        // 清單底部留白
+        const RESULT_FOOTER_H = 90;               // 底部專案名留白
+        const RESULT_MAX_ROWS = 120;              // 錯題上限（只在此極端情況才截斷）
         const RESULT_CANVAS_SCALE = 2;
         const RESULT_FONT_STACK = '"PingFang TC", "Hiragino Sans GB", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", "WenQuanYi Zen Hei", "Noto Color Emoji", system-ui, sans-serif';
         let lastResultPng = '';
+        let lastResultRows = 0;      // 結果圖中實際列出的錯題行數（供測試驗證）
 
         function resultFont(ctx, size, weight) {
             ctx.font = `${weight || 700} ${size}px ${RESULT_FONT_STACK}`;
@@ -2349,9 +2356,13 @@
 
         // 手繪結果圖 → 回傳 canvas，並更新 lastResultPng
         function renderResultCanvas() {
+            // 錯題清單高度按實際題數動態計算：全部錯題都會列出（唔再截斷為 10 題）
+            const rows = Math.min(fcWrongList.length, RESULT_MAX_ROWS);
+            const listH = Math.max(300, RESULT_LIST_TITLE_H + rows * RESULT_ROW_H + RESULT_LIST_PAD_BOTTOM);
+            const canvasH = RESULT_LIST_TOP + listH + RESULT_FOOTER_H;
             const canvas = document.createElement('canvas');
             canvas.width = RESULT_CANVAS_WIDTH * RESULT_CANVAS_SCALE;
-            canvas.height = RESULT_CANVAS_HEIGHT * RESULT_CANVAS_SCALE;
+            canvas.height = canvasH * RESULT_CANVAS_SCALE;
             const ctx = canvas.getContext('2d');
             if (!ctx) return null;
             ctx.scale(RESULT_CANVAS_SCALE, RESULT_CANVAS_SCALE);
@@ -2360,17 +2371,17 @@
             const { accuracy, stars } = computeResultStats();
 
             // ---- 背景 ----
-            const bg = ctx.createLinearGradient(0, 0, W * 0.4, RESULT_CANVAS_HEIGHT);
+            const bg = ctx.createLinearGradient(0, 0, W * 0.4, canvasH);
             bg.addColorStop(0, '#FFF7EC');
             bg.addColorStop(0.5, '#F3F1FF');
             bg.addColorStop(1, '#E8F8F2');
             ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, W, RESULT_CANVAS_HEIGHT);
+            ctx.fillRect(0, 0, W, canvasH);
 
             ctx.fillStyle = 'rgba(155,93,229,0.10)';
             ctx.beginPath(); ctx.arc(980, 120, 130, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = 'rgba(255,182,72,0.16)';
-            ctx.beginPath(); ctx.arc(80, 1250, 150, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(80, canvasH - 110, 150, 0, Math.PI * 2); ctx.fill();
 
             ctx.textAlign = 'center';
             ctx.textBaseline = 'alphabetic';
@@ -2430,8 +2441,8 @@
             resultFont(ctx, 74, 400);
             ctx.fillText('\u2B50\uFE0F'.repeat(stars), W / 2, 770);
 
-            // ---- 錯題清單（最多 10 題）----
-            const boxX = 80, boxY = 800, boxW = 920, boxH = 460;
+            // ---- 錯題清單（高度按題數動態增長，全部錯題都會列出）----
+            const boxX = 80, boxY = RESULT_LIST_TOP, boxW = 920, boxH = listH;
             roundRectPath(ctx, boxX, boxY, boxW, boxH, 32);
             ctx.fillStyle = 'rgba(255,255,255,0.92)';
             ctx.fill();
@@ -2444,22 +2455,23 @@
             fitFontSize(ctx, listTitle, boxW - 220, 38, 800, 24);
             ctx.fillText(listTitle, W / 2, boxY + 56);
 
-            if (fcWrong > 10) {
+            if (fcWrongList.length > RESULT_MAX_ROWS) {
                 ctx.textAlign = 'right';
                 ctx.fillStyle = '#8B85A8';
                 resultFont(ctx, 24, 600);
-                ctx.fillText(`…等 ${fcWrong} 題`, boxX + boxW - 30, boxY + 56);
+                ctx.fillText(`顯示前 ${RESULT_MAX_ROWS} 題／共 ${fcWrong} 題`, boxX + boxW - 30, boxY + 56);
                 ctx.textAlign = 'center';
             }
 
-            const list = fcWrongList.slice(0, 10);
+            const list = fcWrongList.slice(0, RESULT_MAX_ROWS);
+            lastResultRows = list.length;
             if (list.length === 0) {
                 ctx.fillStyle = '#7C7699';
                 resultFont(ctx, 40, 600);
                 ctx.fillText('全部答對，實力滿分！', W / 2, boxY + 180);
             } else {
                 list.forEach((w, idx) => {
-                    const y = boxY + 116 + idx * 34;
+                    const y = boxY + RESULT_LIST_TITLE_H + idx * RESULT_ROW_H;
                     ctx.textAlign = 'left';
                     resultFont(ctx, 32, 400);
                     ctx.fillText(String(w.emoji || '•'), boxX + 34, y);
@@ -2476,7 +2488,7 @@
             // ---- 底部專案名 ----
             ctx.fillStyle = '#8B85A8';
             resultFont(ctx, 26, 600);
-            ctx.fillText('🎮 孖寶學字詞 · Kids Vocab', W / 2, 1310);
+            ctx.fillText('🎮 孖寶學字詞 · Kids Vocab', W / 2, canvasH - 40);
 
             try {
                 lastResultPng = canvas.toDataURL('image/png');
@@ -2588,6 +2600,7 @@
         window.__kidsVocab = {
             renderResultCanvas: () => renderResultCanvas(),
             get lastResultPng() { return lastResultPng; },
+            get lastResultRows() { return lastResultRows; },
             currentGrade: () => getCategorySelectionState(activeGameKey === 'dictation' ? 'dictation' : 'word').grade,
             currentLang: () => getCategorySelectionState(activeGameKey === 'dictation' ? 'dictation' : 'word').lang,
             selectedCategory: () => (activeGameKey === 'dictation' ? dictCategory : currentCategory),

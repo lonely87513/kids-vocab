@@ -418,7 +418,7 @@ async function main() {
         writeFileSync(path.join(SHOT_DIR, 'group-result-image.png'), Buffer.from(resultPng.split(',')[1], 'base64'));
         check('9.5 已輸出 group-result-image.png', existsSync(path.join(SHOT_DIR, 'group-result-image.png')));
 
-        // 9.6 額外驗證：滿分 3 粒星 + 12 題錯題（測試 10 題上限與「…等 N 題」）
+        // 9.6 額外驗證：12 題錯題（全部列出，唔再截斷為 10 題）
         const overflowPng = await page.evaluate(() => {
             const api = window.__kidsVocab;
             const pool = api.vocabulary['🅰️ K3第一段英文'] || [];
@@ -427,7 +427,28 @@ async function main() {
             return api.lastResultPng;
         });
         writeFileSync(path.join(SHOT_DIR, 'group-result-overflow.png'), Buffer.from(overflowPng.split(',')[1], 'base64'));
-        check('9.7 已輸出 group-result-overflow.png（12 題錯題版面上限）', existsSync(path.join(SHOT_DIR, 'group-result-overflow.png')));
+        check('9.7 已輸出 group-result-overflow.png（12 題錯題完整列出）', existsSync(path.join(SHOT_DIR, 'group-result-overflow.png')));
+
+        // 9.6b 錯題清單必須列出全部錯題（畫布高度隨題數增長）
+        const rows12 = await page.evaluate(() => {
+            const api = window.__kidsVocab;
+            const pool = api.vocabulary['🅰️ K3第一段英文'] || [];
+            api.setResultForTest(8, 12, pool.slice(0, 12));
+            const c = api.renderResultCanvas();
+            return { rows: api.lastResultRows, height: c ? c.height : 0 };
+        });
+        check('9.6b 12 題錯題全部列入清單', rows12.rows === 12, JSON.stringify(rows12));
+
+        const rows20 = await page.evaluate(() => {
+            const api = window.__kidsVocab;
+            const pool = api.vocabulary['🅰️ K3第一段英文'] || [];
+            api.setResultForTest(25, 20, pool.slice(0, 20));
+            const c = api.renderResultCanvas();
+            return { rows: api.lastResultRows, height: c ? c.height : 0, png: api.lastResultPng };
+        });
+        writeFileSync(path.join(SHOT_DIR, 'group-result-20wrong.png'), Buffer.from(rows20.png.split(',')[1], 'base64'));
+        check('9.6c 20 題錯題全部列入清單', rows20.rows === 20, JSON.stringify({ rows: rows20.rows }));
+        check('9.6d 畫布高度隨錯題數增長（20 題 > 12 題）', rows20.height > rows12.height, `12題=${rows12.height} 20題=${rows20.height}`);
 
         // 9.4 完成畫面截圖（重新做一輪）
         await page.click('button.btn-flashcards');
