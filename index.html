@@ -277,22 +277,21 @@
         .speak-btn:active { transform: scale(.96); }
 
         /* ============================================================
-           分類標籤（sticky + 窄屏橫向捲動 + 闊屏平均分佈）
+           兩層分類選擇器（學段 → 語言 → 分類）
+           外層：sticky 面板
+           第一行：學段（K2 / K3 / ⭐ 其他）
+           第二行：語言（中文 / 英文 / 其他，動態顯示）
+           第三行：分類 chip（保留 .category-tab 樣式 + 橫向捲動）
            ============================================================ */
         .category-tabs {
             position: sticky;
             top: calc(env(safe-area-inset-top, 0px) + .5rem);
             z-index: 30;
             display: flex;
-            gap: .55rem;
-            justify-content: flex-start;
+            flex-direction: column;
+            gap: .5rem;
             margin: 0 0 1.1rem;
-            padding: .55rem .4rem .7rem;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scroll-snap-type: x proximity;
+            padding: .6rem .5rem .7rem;
             background: var(--surface);
             background: color-mix(in srgb, var(--surface) 88%, transparent);
             -webkit-backdrop-filter: blur(10px);
@@ -301,8 +300,90 @@
             border: 1px solid var(--line);
             box-shadow: var(--sh-1);
         }
-        .category-tabs::-webkit-scrollbar { height: 6px; }
-        .category-tabs::-webkit-scrollbar-thumb { background: rgba(120,120,160,.35); border-radius: var(--r-pill); }
+        .cat-row {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            min-width: 0;
+        }
+        .cat-row-label {
+            flex: 0 0 auto;
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .04em;
+            color: var(--ink-soft);
+            white-space: nowrap;
+        }
+        .cat-row-cats {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .cat-row-scroll {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scroll-snap-type: x proximity;
+            padding: .15rem .1rem .35rem;
+        }
+        .cat-row-scroll::-webkit-scrollbar { height: 6px; }
+        .cat-row-scroll::-webkit-scrollbar-thumb { background: rgba(120,120,160,.35); border-radius: var(--r-pill); }
+        /* 學段按鈕：第一行最突出，用暖色底與語言按鈕區分 */
+        .cat-grade-btn {
+            flex: 0 0 auto;
+            min-height: 46px;
+            padding: .45rem 1.3rem;
+            border: 2px solid #ffc078;
+            border-radius: var(--r-pill);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: clamp(1rem, .95rem + .3vw, 1.2rem);
+            font-weight: 800;
+            color: #b4560f;
+            background: #fff3e0;
+            box-shadow: var(--sh-1);
+            transition: transform .2s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+        }
+        .cat-grade-btn.grade-other { background: #eef0f6; color: #5a6480; border-color: #c6ccdd; }
+        .cat-grade-btn:hover { transform: translateY(-2px); }
+        .cat-grade-btn.active {
+            background: linear-gradient(135deg, #ff8f3c, #ff5f6d);
+            color: #fff;
+            border-color: rgba(255,255,255,.75);
+            box-shadow: var(--sh-brand);
+            transform: translateY(-1px);
+        }
+        .cat-grade-btn.grade-other.active { background: linear-gradient(135deg, #8a93b8, #626c94); color: #fff; }
+        .cat-grade-btn:active { transform: translateY(0) scale(.98); }
+        /* 語言按鈕：第二行，冷色底 */
+        .cat-lang-btn {
+            flex: 0 0 auto;
+            min-height: 44px;
+            padding: .4rem 1.15rem;
+            border: 2px solid #c9ccff;
+            border-radius: var(--r-pill);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: clamp(.95rem, .9rem + .2vw, 1.1rem);
+            font-weight: 700;
+            color: #4b4acf;
+            background: #eef1ff;
+            box-shadow: var(--sh-1);
+            transition: transform .2s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+        }
+        .cat-lang-btn:hover { transform: translateY(-2px); }
+        .cat-lang-btn.active {
+            background: linear-gradient(135deg, #5b6ce8, #7d4fd0);
+            color: #fff;
+            border-color: rgba(255,255,255,.75);
+            box-shadow: var(--sh-brand);
+        }
+        .cat-lang-btn:active { transform: translateY(0) scale(.98); }
         .category-tab {
             flex: 0 0 auto;
             min-height: var(--tap);
@@ -327,6 +408,54 @@
             transform: translateY(-1px);
         }
         .category-tab:active { transform: translateY(0) scale(.98); }
+        /* 分類 chip 屬於其他遊戲（該遊戲本身沒有內容）→ 淡化 + 虛線框 */
+        .category-tab.unavailable:not(.active) {
+            opacity: .55;
+            border: 2px dashed rgba(120,120,160,.5);
+            background: transparent;
+            color: var(--ink-soft);
+            box-shadow: none;
+        }
+        .category-tab.unavailable:not(.active):hover {
+            background: rgba(120,120,160,.14);
+            color: var(--ink);
+            transform: none;
+        }
+
+        /* ============================================================
+           結果截圖預覽 + 輕提示（toast）
+           ============================================================ */
+        .kv-toast {
+            position: fixed;
+            left: 50%;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 1.2rem);
+            transform: translateX(-50%) translateY(20px);
+            max-width: min(92vw, 30rem);
+            padding: .75rem 1.1rem;
+            border-radius: var(--r-pill);
+            background: rgba(40, 36, 66, .94);
+            color: #fff;
+            font-size: .95rem;
+            font-weight: 600;
+            line-height: 1.5;
+            text-align: center;
+            box-shadow: var(--sh-2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s ease, transform .25s ease;
+            z-index: 999;
+        }
+        .kv-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #fc-result-preview { text-align: center; }
+        #fc-result-img {
+            max-width: min(100%, 360px);
+            width: 100%;
+            height: auto;
+            border-radius: 18px;
+            box-shadow: var(--sh-2);
+            display: block;
+            margin: 0 auto;
+        }
 
         /* ============================================================
            分數、圖示與鼓勵文字
@@ -530,13 +659,14 @@
         }
 
         @media (min-width: 900px) {
-            /* 闊屏分類標籤平均分佈（可換行、不再需要橫向捲動） */
-            .category-tabs {
+            /* 闊屏分類 chip 平均分佈（可換行、不再需要橫向捲動） */
+            .category-tabs { padding: .7rem .8rem .85rem; }
+            .cat-row { justify-content: center; }
+            .cat-row-scroll {
                 flex-wrap: wrap;
                 justify-content: center;
                 overflow-x: visible;
                 scroll-snap-type: none;
-                padding: .7rem .8rem .85rem;
             }
             .category-tab { flex: 0 1 auto; }
         }
@@ -565,6 +695,9 @@
             .add-word-form input { font-size: 1rem; }
             .add-word-form button { font-size: 1.1rem; }
             .back-btn { padding: .7rem 1.1rem; font-size: 1rem; }
+            /* 手機版：觸控目標維持 ≥44px，分類 chip 保持橫向捲動 */
+            .cat-grade-btn, .cat-lang-btn { min-height: 44px; padding-left: .95rem; padding-right: .95rem; }
+            .cat-row-label { font-size: .72rem; }
         }
 
         /* ============================================================
@@ -588,6 +721,13 @@
             .game-area { border-color: rgba(255,255,255,.08); }
             .card { border-color: rgba(255,255,255,.25); }
             .category-tabs { background: color-mix(in srgb, var(--surface) 86%, transparent); }
+            /* 深色模式下的選擇器按鈕（未選中保持柔和底色，選中維持高對比） */
+            .cat-grade-btn { background: #4a3524; color: #ffc48a; border-color: #8a5a30; }
+            .cat-grade-btn.grade-other { background: #333a4d; color: #b9c2da; border-color: #4c5670; }
+            .cat-grade-btn.active { background: linear-gradient(135deg, #ff8f3c, #ff5f6d); color: #fff; }
+            .cat-grade-btn.grade-other.active { background: linear-gradient(135deg, #8a93b8, #626c94); color: #fff; }
+            .cat-lang-btn { background: #2a2b4a; color: #aab5ff; border-color: #45477a; }
+            .cat-lang-btn.active { background: linear-gradient(135deg, #5b6ce8, #7d4fd0); color: #fff; }
             /* 配對卡維持淺色底，文字用深色以確保可讀 */
             .matching-card { color: #2f2c3f; }
             /* 視窗內文為內聯樣式，需以 !important 覆寫以免深色底上看不到 */
@@ -611,6 +751,12 @@
             .category-tab:hover,
             .category-tab.active,
             .category-tab:active,
+            .cat-grade-btn:hover,
+            .cat-grade-btn.active,
+            .cat-grade-btn:active,
+            .cat-lang-btn:hover,
+            .cat-lang-btn.active,
+            .cat-lang-btn:active,
             .option-btn:hover,
             .option-btn:active,
             .matching-card:hover,
@@ -668,6 +814,14 @@
                 </div>
                 <div id="fc-review-btn" style="display: none; margin-top: 15px;">
                     <button class="back-btn" style="background: #FFE66D; color: #333; font-size: 1.2em; padding: 15px 30px;" onclick="reviewWrongCards()">📝 查看錯題 (0)</button>
+                </div>
+                <!-- 認字卡完成後才出現的「輸出結果截圖」按鈕（與 fc-review-btn 同一區域） -->
+                <div id="fc-export-btn" style="display: none; margin-top: 15px;">
+                    <button class="back-btn" id="fc-export-btn-inner" style="background: #9B5DE5; color: #fff; font-size: 1.2em; padding: 15px 30px; min-height: 48px;" onclick="exportFlashcardResult()">📸 輸出結果截圖</button>
+                </div>
+                <div id="fc-result-preview" style="display: none; margin-top: 15px;">
+                    <img id="fc-result-img" alt="認字卡結果圖" />
+                    <p id="fc-result-hint" style="font-size: 0.95em; color: #667eea; margin: 10px 0 0;">長按圖片即可儲存到相簿 📷</p>
                 </div>
             </div>
         </div>
@@ -1427,6 +1581,7 @@
 
         // Show game
         function showGame(game) {
+            activeGameKey = game;
             document.querySelectorAll('.game-area').forEach(el => el.classList.remove('active'));
             document.getElementById(game).classList.add('active');
             if (game === 'flashcards') initFlashcards();
@@ -1449,6 +1604,288 @@
         }
 
         function getCategories() { return Object.keys(vocabulary); }
+
+        // ============================================================
+        // 兩層分類樹（學段 → 語言 → 分類）
+        // ------------------------------------------------------------
+        // 2026-11-08：分類改為「學段 → 語言 → 分類」三行式選擇器。
+        // 本區塊是分類結構的「單一真相來源」：
+        //   - CATEGORY_TREE：內建 11 個分類的學段／語言對應
+        //   - ⭐ 其他：未列入樹內的分類（通常是使用者自訂字詞），
+        //     其語言由分類名稱自動判斷（名含「英文」→ 英文、名含「中文」→ 中文），
+        //     兩者皆不含則放入「其他」子分組
+        // 內建分類的 key 與詞彙資料一律維持原樣，這裡只描述「位置」。
+        // ============================================================
+        const CATEGORY_TREE = {
+            'K2': {
+                '中文': ['📚 K2第二段中文', '📚 K2第三段中文'],
+                '英文': ['🅰️ K2第二段英文', '🅰️ K2第三段英文']
+            },
+            'K3': {
+                '中文': ['📚 K3第一段中文生字', '📚 K3第一段中文詞語', '📚 K3第一段中文默寫', '📚 K3第一段中文相反詞', '📖 K3第一段認讀句子'],
+                '英文': ['🅰️ K3第一段英文', '📖 Unit 2']
+            }
+        };
+        const OTHER_GRADE_KEY = '⭐ 其他';
+        const OTHER_LANG_KEY = '其他';
+        const LANG_KEY_ORDER = ['中文', '英文', '其他'];
+
+        // 依分類名稱判斷語言（供「⭐ 其他」分組使用）
+        function guessLangFromCategoryName(cat) {
+            const name = String(cat || '');
+            if (name.includes('英文')) return '英文';
+            if (name.includes('中文')) return '中文';
+            return OTHER_LANG_KEY;
+        }
+
+        // 所有已知分類名稱（詞彙庫 + 讀默句子庫），供「⭐ 其他」分組使用
+        function getAllKnownCategoryNames() {
+            const names = [];
+            const push = (obj) => {
+                if (!obj) return;
+                Object.keys(obj).forEach(c => { if (!names.includes(c)) names.push(c); });
+            };
+            push(vocabulary);
+            // 讀默句子庫宣告於後段；用 try/catch 避免讀取時序問題
+            try { push(typeof dictationSentences !== 'undefined' ? dictationSentences : null); } catch (e) { /* 尚未初始化 */ }
+            return names;
+        }
+
+        // 回傳有序的分類樹：[{ grade, langs: [{ lang, categories: [] }] }]
+        function getCategoryTree() {
+            const tree = [];
+            const known = new Set();
+            Object.keys(CATEGORY_TREE).forEach(grade => {
+                const langs = [];
+                LANG_KEY_ORDER.forEach(lang => {
+                    const cats = CATEGORY_TREE[grade][lang] || [];
+                    if (cats.length === 0) return;
+                    cats.forEach(c => known.add(c));
+                    langs.push({ lang, categories: cats.slice() });
+                });
+                tree.push({ grade, langs });
+            });
+
+            // ⭐ 其他：未列入 CATEGORY_TREE 的分類（通常是使用者自訂字詞）
+            // 即使目前沒有自訂分類，也保留這個學段按鈕，讓家長知道可以自行加分類。
+            const extras = getAllKnownCategoryNames().filter(c => !known.has(c));
+            const grouped = new Map();
+            extras.forEach(cat => {
+                const lang = guessLangFromCategoryName(cat);
+                if (!grouped.has(lang)) grouped.set(lang, []);
+                grouped.get(lang).push(cat);
+            });
+            const otherLangs = [];
+            LANG_KEY_ORDER.forEach(lang => {
+                if (grouped.has(lang)) otherLangs.push({ lang, categories: grouped.get(lang) });
+            });
+            tree.push({ grade: OTHER_GRADE_KEY, langs: otherLangs });
+            return tree;
+        }
+
+        // 取得某學段 + 某語言底下的分類清單
+        function getCategoriesFor(gradeKey, langKey) {
+            const grade = getCategoryTree().find(g => g.grade === gradeKey);
+            if (!grade) return [];
+            const lang = grade.langs.find(l => l.lang === langKey);
+            return lang ? lang.categories.slice() : [];
+        }
+
+        // 某個分類屬於邊個學段 / 邊種語言
+        function resolveCategoryLocation(cat) {
+            const tree = getCategoryTree();
+            for (const grade of tree) {
+                for (const lang of grade.langs) {
+                    if (lang.categories.includes(cat)) {
+                        return { grade: grade.grade, lang: lang.lang };
+                    }
+                }
+            }
+            return { grade: OTHER_GRADE_KEY, lang: guessLangFromCategoryName(cat) };
+        }
+
+        // ========== 兩層分類的選取狀態（module 級）============
+        // 認字卡 / 估估吓 / 配對 共用 currentCategory，因此共用同一組學段／語言；
+        // 句子讀默使用獨立的 dictCategory，因此亦有獨立的選取狀態。
+        // 重新進入遊戲（showGame）時會保留上一次選擇。
+        let selectedGrade = 'K2';
+        let selectedLang = '中文';
+        let dictSelectedGrade = 'K3';
+        let dictSelectedLang = '英文';
+        let activeGameKey = 'flashcards';
+
+        function getCategorySelectionState(stateKey) {
+            if (stateKey === 'dictation') return { grade: dictSelectedGrade, lang: dictSelectedLang };
+            return { grade: selectedGrade, lang: selectedLang };
+        }
+
+        function setCategorySelectionState(stateKey, grade, lang) {
+            if (stateKey === 'dictation') {
+                dictSelectedGrade = grade;
+                dictSelectedLang = lang;
+            } else {
+                selectedGrade = grade;
+                selectedLang = lang;
+            }
+        }
+
+        // ============================================================
+        // 三行式分類選擇器（學段 / 語言 / 分類）— 四個遊戲共用同一份實作
+        // opts: { stateKey, gameLabel, availableCategories(), getSelected(),
+        //         onSelect(cat), onUnavailable(cat) }
+        // ============================================================
+        function makeCatRowLabel(text) {
+            const span = document.createElement('span');
+            span.className = 'cat-row-label';
+            span.textContent = text;
+            return span;
+        }
+
+        function renderCategoryTabs(containerId, opts) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const tree = getCategoryTree();
+            const state = getCategorySelectionState(opts.stateKey);
+            const available = opts.availableCategories() || [];
+            const selected = opts.getSelected();
+
+            container.innerHTML = '';
+
+            // ---------- 第一行：學段 ----------
+            const gradeRow = document.createElement('div');
+            gradeRow.className = 'cat-row cat-row-grade';
+            gradeRow.dataset.row = 'grade';
+            gradeRow.setAttribute('role', 'group');
+            gradeRow.setAttribute('aria-label', '學段');
+            gradeRow.appendChild(makeCatRowLabel('學段'));
+            tree.forEach(grade => {
+                const isActive = grade.grade === state.grade;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'cat-grade-btn'
+                    + (grade.grade === OTHER_GRADE_KEY ? ' grade-other' : '')
+                    + (isActive ? ' active' : '');
+                btn.dataset.grade = grade.grade;
+                btn.textContent = grade.grade;
+                btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                btn.addEventListener('click', () => handleGradeLangChange(containerId, opts, grade.grade, null));
+                gradeRow.appendChild(btn);
+            });
+            container.appendChild(gradeRow);
+
+            // ---------- 第二行：語言（按該學段實際有的子分組動態顯示）----------
+            const currentGrade = tree.find(g => g.grade === state.grade);
+            const langs = currentGrade ? currentGrade.langs : [];
+            const langRow = document.createElement('div');
+            langRow.className = 'cat-row cat-row-lang';
+            langRow.dataset.row = 'lang';
+            langRow.setAttribute('role', 'group');
+            langRow.setAttribute('aria-label', '語言');
+            langRow.appendChild(makeCatRowLabel('語言'));
+            if (langs.length === 0) {
+                const none = document.createElement('span');
+                none.className = 'cat-row-label';
+                none.textContent = '未有自訂分類（可用「加字詞」新增）';
+                langRow.appendChild(none);
+            }
+            langs.forEach(lang => {
+                const isActive = lang.lang === state.lang;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'cat-lang-btn' + (isActive ? ' active' : '');
+                btn.dataset.lang = lang.lang;
+                btn.textContent = lang.lang;
+                btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                btn.addEventListener('click', () => handleGradeLangChange(containerId, opts, state.grade, lang.lang));
+                langRow.appendChild(btn);
+            });
+            container.appendChild(langRow);
+
+            // ---------- 第三行：分類 chip ----------
+            const catRow = document.createElement('div');
+            catRow.className = 'cat-row cat-row-cats';
+            catRow.dataset.row = 'categories';
+            catRow.setAttribute('role', 'group');
+            catRow.setAttribute('aria-label', '分類');
+            catRow.appendChild(makeCatRowLabel('分類'));
+
+            const scroll = document.createElement('div');
+            scroll.className = 'cat-row-scroll';
+
+            const cats = getCategoriesFor(state.grade, state.lang);
+            cats.forEach(cat => {
+                const isAvailable = available.includes(cat);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'category-tab'
+                    + (cat === selected ? ' active' : '')
+                    + (isAvailable ? '' : ' unavailable');
+                btn.dataset.category = cat;
+                btn.dataset.available = isAvailable ? '1' : '0';
+                btn.textContent = cat;
+                btn.title = isAvailable ? cat : `${cat}（其他遊戲專用）`;
+                if (isAvailable) {
+                    btn.addEventListener('click', () => opts.onSelect(cat));
+                } else {
+                    btn.addEventListener('click', () => opts.onUnavailable(cat));
+                }
+                scroll.appendChild(btn);
+            });
+            if (cats.length === 0) {
+                const empty = document.createElement('span');
+                empty.className = 'cat-row-label';
+                empty.textContent = '此組合暫時未有分類';
+                scroll.appendChild(empty);
+            }
+            catRow.appendChild(scroll);
+            container.appendChild(catRow);
+
+            scrollActiveTabIntoView(container);
+        }
+
+        // 切換學段 / 語言：若原本選中的分類不在新組合內 → 自動選第一個可用分類
+        function handleGradeLangChange(containerId, opts, grade, lang) {
+            const state = getCategorySelectionState(opts.stateKey);
+            const tree = getCategoryTree();
+            const gradeNode = tree.find(g => g.grade === grade);
+            const langKeys = gradeNode ? gradeNode.langs.map(l => l.lang) : [];
+            let nextLang = lang;
+            if (!nextLang) nextLang = langKeys.includes(state.lang) ? state.lang : (langKeys[0] || '');
+
+            setCategorySelectionState(opts.stateKey, grade, nextLang);
+
+            const group = getCategoriesFor(grade, nextLang);
+            const available = opts.availableCategories() || [];
+            if (!group.includes(opts.getSelected())) {
+                const first = group.find(c => available.includes(c));
+                if (first) {
+                    opts.onSelect(first);
+                } else {
+                    // 該組合在此遊戲沒有可用分類 → 保留原本選擇並提示
+                    const label = nextLang ? `${grade} / ${nextLang}` : grade;
+                    showToast(`「${label}」在${opts.gameLabel || '此遊戲'}暫時沒有可用分類`);
+                }
+            }
+            renderCategoryTabs(containerId, opts);
+        }
+
+        // 點擊其他遊戲專屬的分類 → 自動切換到對應的遊戲
+        function handleUnavailableCategory(cat) {
+            if (vocabulary[cat]) {
+                currentCategory = cat;
+                const loc = resolveCategoryLocation(cat);
+                setCategorySelectionState('word', loc.grade, loc.lang);
+                showToast(`「${cat}」是詞彙分類，已切換到認字卡`);
+                showGame('flashcards');
+            } else {
+                const loc = resolveCategoryLocation(cat);
+                dictCategory = cat;
+                setCategorySelectionState('dictation', loc.grade, loc.lang);
+                showToast(`「${cat}」是讀默句子分類，已切換到句子讀默`);
+                showGame('dictation');
+            }
+        }
 
         // 分類標籤列在窄屏可以橫向捲動；切換分類時自動把當前分類捲入畫面，
         // 避免使用者在看不到的分頁上（2026-11-07 修正）
@@ -1505,22 +1942,21 @@
 
         // Flashcards
         function initFlashcards() {
-            const fcTabs = document.getElementById('fc-tabs');
-            fcTabs.innerHTML = '';
-            getCategories().forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = 'category-tab' + (cat === currentCategory ? ' active' : '');
-                btn.dataset.category = cat;
-                btn.textContent = cat;  // safe: textContent escapes HTML
-                btn.addEventListener('click', () => switchCategory(cat));
-                fcTabs.appendChild(btn);
+            renderCategoryTabs('fc-tabs', {
+                stateKey: 'word',
+                gameLabel: '認字卡',
+                availableCategories: getCategories,
+                getSelected: () => currentCategory,
+                onSelect: (cat) => switchCategory(cat),
+                onUnavailable: handleUnavailableCategory
             });
-            scrollActiveTabIntoView(fcTabs);
 
             // Reset score display
             document.getElementById('fc-score').textContent = '✅ 0 | ❌ 0';
             document.getElementById('fc-buttons').style.display = 'block';
             document.getElementById('fc-review-btn').style.display = 'none';
+            // 未完成一輪 → 隱藏「輸出結果截圖」按鈕
+            resetFlashcardResultUI();
 
             // Check if showing quantity control
             const isLearningCat = isLearningCategory(currentCategory);
@@ -1528,7 +1964,7 @@
 
             // Show quantity slider only for learning categories
             if (isLearningCat) {
-                const availableWords = vocabulary[currentCategory].length;
+                const availableWords = (vocabulary[currentCategory] || []).length;
                 const slider = document.getElementById('fc-quantity-slider');
                 slider.max = Math.min(100, Math.max(1, availableWords));  // slider min=1, avoid 0
                 if (fcQuantity > availableWords) fcQuantity = availableWords;
@@ -1548,8 +1984,9 @@
                 document.getElementById('fc-progress').textContent = '0/0';
             } else {
                 // For other categories, show all cards
-                fcQuantity = vocabulary[currentCategory].length;
-                flashcardWords = shuffle([...vocabulary[currentCategory]]);
+                const allWords = vocabulary[currentCategory] || [];
+                fcQuantity = allWords.length;
+                flashcardWords = shuffle([...allWords]);
                 currentCard = 0;
                 renderCard();
             }
@@ -1558,7 +1995,7 @@
         // Update flashcards quantity
         function updateFcQuantity(value) {
             fcQuantity = parseInt(value);
-            const availableWords = vocabulary[currentCategory].length;
+            const availableWords = (vocabulary[currentCategory] || []).length;
             document.getElementById('fc-quantity-display').textContent = `${fcQuantity} 題 / 共 ${availableWords} 題`;
             // Keep start button disabled state in sync (C3 safety)
             const startBtn = document.getElementById('fc-start-btn');
@@ -1593,6 +2030,8 @@
             fcStarted = true;
             document.getElementById('fc-buttons').style.display = 'block';
             document.getElementById('fc-review-btn').style.display = 'none';
+            // 新的一輪 → 隱藏「輸出結果截圖」按鈕
+            resetFlashcardResultUI();
             renderCard();
         }
 
@@ -1799,6 +2238,9 @@
             document.getElementById('fc-score').textContent = `✅ ${fcCorrect} | ❌ ${fcWrong}`;
             document.getElementById('fc-progress').style.width = '100%';
             document.getElementById('fc-progress').textContent = '完成!';
+            // 完成畫面 → 顯示「輸出結果截圖」按鈕
+            const exportBtn = document.getElementById('fc-export-btn');
+            if (exportBtn) exportBtn.style.display = 'block';
 
             document.getElementById('fc-container').innerHTML = `
                 <div style="text-align:center;padding:30px;">
@@ -1825,8 +2267,343 @@
             document.getElementById('fc-buttons').style.display = 'block';
             document.getElementById('fc-score').style.display = 'block';
             document.getElementById('fc-score').textContent = `✅ 0 | ❌ 0 (溫習錯題)`;
+            // 溫習模式 → 再次隱藏「輸出結果截圖」按鈕
+            resetFlashcardResultUI();
             renderCard();
         }
+
+        // ============================================================
+        // 認字卡結果截圖（canvas 2D 手繪，不引入任何外部 library）
+        // ------------------------------------------------------------
+        // 1080 × 1350（4:5）邏輯尺寸，以 2 倍像素比渲染，文字清晰。
+        // 內容：標題、日期時間、學習分類、答對／答錯、正確率、星星、錯題清單、專案名。
+        // ============================================================
+        const RESULT_CANVAS_WIDTH = 1080;
+        const RESULT_CANVAS_HEIGHT = 1350;
+        const RESULT_CANVAS_SCALE = 2;
+        const RESULT_FONT_STACK = '"PingFang TC", "Hiragino Sans GB", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", "WenQuanYi Zen Hei", "Noto Color Emoji", system-ui, sans-serif';
+        let lastResultPng = '';
+
+        function resultFont(ctx, size, weight) {
+            ctx.font = `${weight || 700} ${size}px ${RESULT_FONT_STACK}`;
+        }
+
+        // 依文字長度自動縮放字級，確保文字不會溢出方框
+        function fitFontSize(ctx, text, maxWidth, size, weight, minSize) {
+            const min = minSize || Math.max(18, Math.round(size * 0.45));
+            let current = size;
+            while (current > min) {
+                resultFont(ctx, current, weight);
+                if (ctx.measureText(String(text)).width <= maxWidth) return current;
+                current -= 2;
+            }
+            resultFont(ctx, min, weight);
+            return min;
+        }
+
+        // 自動換行（中英文皆適用，逐字量度寬度）
+        function wrapCanvasText(ctx, text, maxWidth) {
+            const lines = [];
+            let line = '';
+            for (const ch of Array.from(String(text))) {
+                const test = line + ch;
+                if (line && ctx.measureText(test).width > maxWidth) {
+                    lines.push(line);
+                    line = ch;
+                } else {
+                    line = test;
+                }
+            }
+            if (line) lines.push(line);
+            return lines;
+        }
+
+        function roundRectPath(ctx, x, y, w, h, r) {
+            const radius = Math.min(r, w / 2, h / 2);
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.arcTo(x + w, y, x + w, y + h, radius);
+            ctx.arcTo(x + w, y + h, x, y + h, radius);
+            ctx.arcTo(x, y + h, x, y, radius);
+            ctx.arcTo(x, y, x + w, y, radius);
+            ctx.closePath();
+        }
+
+        function formatResultDateTime(d) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function resultDateStamp(d) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
+        // 成績統計（答對／答錯／正確率／星星數）— 供繪圖與測試共用
+        function computeResultStats() {
+            const total = Math.max(1, fcCorrect + fcWrong);
+            const accuracy = Math.round((fcCorrect / total) * 100);
+            const stars = accuracy >= 90 ? 3 : (accuracy >= 70 ? 2 : 1);
+            return { total, accuracy, stars };
+        }
+
+        // 手繪結果圖 → 回傳 canvas，並更新 lastResultPng
+        function renderResultCanvas() {
+            const canvas = document.createElement('canvas');
+            canvas.width = RESULT_CANVAS_WIDTH * RESULT_CANVAS_SCALE;
+            canvas.height = RESULT_CANVAS_HEIGHT * RESULT_CANVAS_SCALE;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return null;
+            ctx.scale(RESULT_CANVAS_SCALE, RESULT_CANVAS_SCALE);
+
+            const W = RESULT_CANVAS_WIDTH;
+            const { accuracy, stars } = computeResultStats();
+
+            // ---- 背景 ----
+            const bg = ctx.createLinearGradient(0, 0, W * 0.4, RESULT_CANVAS_HEIGHT);
+            bg.addColorStop(0, '#FFF7EC');
+            bg.addColorStop(0.5, '#F3F1FF');
+            bg.addColorStop(1, '#E8F8F2');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, RESULT_CANVAS_HEIGHT);
+
+            ctx.fillStyle = 'rgba(155,93,229,0.10)';
+            ctx.beginPath(); ctx.arc(980, 120, 130, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(255,182,72,0.16)';
+            ctx.beginPath(); ctx.arc(80, 1250, 150, 0, Math.PI * 2); ctx.fill();
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+
+            // ---- 標題 ----
+            ctx.fillStyle = '#4A4370';
+            fitFontSize(ctx, '🃏 認字卡結果', W - 120, 68, 800, 40);
+            ctx.fillText('🃏 認字卡結果', W / 2, 140);
+
+            // ---- 日期時間 ----
+            ctx.fillStyle = '#7C7699';
+            resultFont(ctx, 34, 600);
+            ctx.fillText(formatResultDateTime(new Date()), W / 2, 196);
+
+            // ---- 學習分類名稱（自動縮放 + 自動換行，最多兩行）----
+            const catName = currentCategory || '—';
+            const catSize = fitFontSize(ctx, catName, W - 160, 40, 700, 24);
+            resultFont(ctx, catSize, 700);
+            ctx.fillStyle = '#5B55A8';
+            const catLines = wrapCanvasText(ctx, catName, W - 160).slice(0, 2);
+            catLines.forEach((line, idx) => ctx.fillText(line, W / 2, 246 + idx * 46));
+
+            // ---- 成績卡片 ----
+            const cardX = 80, cardY = 310, cardW = 920, cardH = 300;
+            roundRectPath(ctx, cardX, cardY, cardW, cardH, 36);
+            ctx.fillStyle = 'rgba(255,255,255,0.94)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(91,85,168,0.16)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(91,85,168,0.16)';
+            ctx.beginPath();
+            ctx.moveTo(W / 2, cardY + 44);
+            ctx.lineTo(W / 2, cardY + cardH - 44);
+            ctx.stroke();
+
+            ctx.fillStyle = '#2E9E6B';
+            fitFontSize(ctx, '✅ 答對', 380, 52, 800, 30);
+            ctx.fillText('✅ 答對', 300, cardY + 96);
+            resultFont(ctx, 96, 800);
+            ctx.fillText(String(fcCorrect), 300, cardY + 220);
+
+            ctx.fillStyle = '#E0654F';
+            fitFontSize(ctx, '❌ 答錯', 380, 52, 800, 30);
+            ctx.fillText('❌ 答錯', 780, cardY + 96);
+            resultFont(ctx, 96, 800);
+            ctx.fillText(String(fcWrong), 780, cardY + 220);
+
+            // ---- 正確率 ----
+            ctx.fillStyle = '#4A4370';
+            fitFontSize(ctx, `正確率 ${accuracy}%`, W - 200, 58, 800, 34);
+            ctx.fillText(`正確率 ${accuracy}%`, W / 2, 686);
+
+            // ---- 星星（≥90% 三粒、≥70% 兩粒、其餘一粒）----
+            ctx.fillStyle = '#F5A623';
+            resultFont(ctx, 74, 400);
+            ctx.fillText('\u2B50\uFE0F'.repeat(stars), W / 2, 770);
+
+            // ---- 錯題清單（最多 10 題）----
+            const boxX = 80, boxY = 800, boxW = 920, boxH = 460;
+            roundRectPath(ctx, boxX, boxY, boxW, boxH, 32);
+            ctx.fillStyle = 'rgba(255,255,255,0.92)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(224,101,79,0.18)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = '#E0654F';
+            const listTitle = `📝 錯題清單（共 ${fcWrong} 題）`;
+            fitFontSize(ctx, listTitle, boxW - 220, 38, 800, 24);
+            ctx.fillText(listTitle, W / 2, boxY + 56);
+
+            if (fcWrong > 10) {
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#8B85A8';
+                resultFont(ctx, 24, 600);
+                ctx.fillText(`…等 ${fcWrong} 題`, boxX + boxW - 30, boxY + 56);
+                ctx.textAlign = 'center';
+            }
+
+            const list = fcWrongList.slice(0, 10);
+            if (list.length === 0) {
+                ctx.fillStyle = '#7C7699';
+                resultFont(ctx, 40, 600);
+                ctx.fillText('全部答對，實力滿分！', W / 2, boxY + 180);
+            } else {
+                list.forEach((w, idx) => {
+                    const y = boxY + 116 + idx * 34;
+                    ctx.textAlign = 'left';
+                    resultFont(ctx, 32, 400);
+                    ctx.fillText(String(w.emoji || '•'), boxX + 34, y);
+                    ctx.fillStyle = '#3F3A5C';
+                    fitFontSize(ctx, String(w.chinese || ''), 300, 30, 700, 20);
+                    ctx.fillText(String(w.chinese || ''), boxX + 92, y);
+                    ctx.fillStyle = '#8B85A8';
+                    fitFontSize(ctx, String(w.english || ''), 420, 26, 500, 18);
+                    ctx.fillText(String(w.english || ''), boxX + 420, y);
+                    ctx.textAlign = 'center';
+                });
+            }
+
+            // ---- 底部專案名 ----
+            ctx.fillStyle = '#8B85A8';
+            resultFont(ctx, 26, 600);
+            ctx.fillText('🎮 孖寶學字詞 · Kids Vocab', W / 2, 1310);
+
+            try {
+                lastResultPng = canvas.toDataURL('image/png');
+            } catch (e) {
+                lastResultPng = '';
+            }
+            return canvas;
+        }
+
+        // dataURL → Blob（同步轉換），令 navigator.share 可在使用者點擊事件內直接呼叫
+        function dataUrlToBlob(dataUrl) {
+            const raw = String(dataUrl || '');
+            const commaIdx = raw.indexOf(',');
+            if (commaIdx < 0) return null;
+            const header = raw.slice(0, commaIdx);
+            const mime = (header.match(/:(.*?);/) || [])[1] || 'image/png';
+            const binary = atob(raw.slice(commaIdx + 1));
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return new Blob([bytes], { type: mime });
+        }
+
+        // 結果預覽（分享／下載都失敗時的最後備案）
+        function showResultPreview(hintText) {
+            const box = document.getElementById('fc-result-preview');
+            const img = document.getElementById('fc-result-img');
+            const hint = document.getElementById('fc-result-hint');
+            if (!box || !img) return;
+            if (lastResultPng) img.src = lastResultPng;
+            if (hint) hint.textContent = hintText || '長按圖片即可儲存到相簿 📷';
+            box.style.display = 'block';
+        }
+
+        // 重設結果相關 UI（開始新一輪 / 切換分類時隱藏按鈕）
+        function resetFlashcardResultUI() {
+            const exportBtn = document.getElementById('fc-export-btn');
+            if (exportBtn) exportBtn.style.display = 'none';
+            const preview = document.getElementById('fc-result-preview');
+            if (preview) preview.style.display = 'none';
+            const img = document.getElementById('fc-result-img');
+            if (img) img.removeAttribute('src');
+        }
+
+        // 輸出結果截圖：① 系統分享 → ② 下載 → ③ 頁面預覽
+        function exportFlashcardResult() {
+            const canvas = renderResultCanvas();
+            if (!canvas || !lastResultPng) {
+                showToast('❌ 產生圖片失敗，請再試一次');
+                return;
+            }
+            const filename = `認字卡結果-${resultDateStamp(new Date())}.png`;
+            let blob = null;
+            try { blob = dataUrlToBlob(lastResultPng); } catch (e) { blob = null; }
+            if (!blob) {
+                showToast('❌ 圖片轉換失敗，請用預覽方式儲存');
+                showResultPreview();
+                return;
+            }
+
+            // ① 系統分享（iOS / Android 支援時）
+            if (navigator.share && typeof File !== 'undefined') {
+                const file = new File([blob], filename, { type: 'image/png' });
+                const shareData = { files: [file], title: '認字卡結果', text: `認字卡結果：${currentCategory}` };
+                const canShare = navigator.canShare ? navigator.canShare(shareData) : false;
+                if (canShare) {
+                    // 必須在使用者點擊事件內直接呼叫（iOS 限制），所以 blob 已同步備妥
+                    navigator.share(shareData).then(() => {
+                        showToast('✅ 已開啟分享面板');
+                    }).catch(() => {
+                        showToast('ℹ️ 已取消分享，可長按圖片儲存 📷');
+                        showResultPreview();
+                    });
+                    return;
+                }
+            }
+
+            // ② 直接下載
+            try {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 15000);
+                showToast('✅ 已下載結果圖片');
+                showResultPreview('已下載圖片；也可以長按圖片儲存到相簿 📷');
+            } catch (e) {
+                showToast('❌ 下載失敗，請長按圖片儲存 📷');
+                showResultPreview();
+            }
+        }
+
+        // 輕提示（toast）
+        let toastTimer = null;
+        function showToast(message, duration) {
+            const toast = document.getElementById('kv-toast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), duration || 2800);
+        }
+
+        // ============================================================
+        // 測試介面（供 Playwright 驗證使用）
+        // ============================================================
+        window.__kidsVocab = {
+            renderResultCanvas: () => renderResultCanvas(),
+            get lastResultPng() { return lastResultPng; },
+            currentGrade: () => getCategorySelectionState(activeGameKey === 'dictation' ? 'dictation' : 'word').grade,
+            currentLang: () => getCategorySelectionState(activeGameKey === 'dictation' ? 'dictation' : 'word').lang,
+            selectedCategory: () => (activeGameKey === 'dictation' ? dictCategory : currentCategory),
+            resultStats: () => computeResultStats(),
+            // 測試用：直接設定一輪結果（用於驗證版面極限，例如 12 題錯題）
+            setResultForTest: (correct, wrong, wrongList) => {
+                fcCorrect = correct;
+                fcWrong = wrong;
+                fcWrongList = Array.isArray(wrongList) ? wrongList : [];
+            },
+            flashcardWords: () => flashcardWords.slice(),
+            vocabulary: vocabulary,
+            categoryTree: () => getCategoryTree(),
+            getCategoriesFor: (grade, lang) => getCategoriesFor(grade, lang),
+            resolveCategoryLocation: (cat) => resolveCategoryLocation(cat)
+        };
 
         // Quiz
         function initQuiz() {
@@ -1835,7 +2612,7 @@
             document.getElementById('quantity-control').style.display = isLearningCat ? 'block' : 'none';
 
             // Update slider max based on available words
-            const availableWords = vocabulary[currentCategory].length;
+            const availableWords = (vocabulary[currentCategory] || []).length;
             const slider = document.getElementById('quantity-slider');
             slider.max = Math.min(100, availableWords);
             if (quizQuantity > availableWords) {
@@ -1844,21 +2621,18 @@
             }
             document.getElementById('quantity-display').textContent = `${quizQuantity} 題 / 共 ${availableWords} 題`;
 
-            // Render quiz category tabs via DOM API to prevent XSS via category names
-            const quizTabs = document.getElementById('quiz-tabs');
-            quizTabs.innerHTML = '';
-            getCategories().forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = 'category-tab' + (cat === currentCategory ? ' active' : '');
-                btn.dataset.category = cat;
-                btn.textContent = cat;
-                btn.addEventListener('click', () => switchQuizCategory(cat));
-                quizTabs.appendChild(btn);
+            // Render quiz category tabs (共用三行式分類選擇器)
+            renderCategoryTabs('quiz-tabs', {
+                stateKey: 'word',
+                gameLabel: '估估吓',
+                availableCategories: getCategories,
+                getSelected: () => currentCategory,
+                onSelect: (cat) => switchQuizCategory(cat),
+                onUnavailable: handleUnavailableCategory
             });
-            scrollActiveTabIntoView(quizTabs);
 
             // Use quantity limit
-            const allWords = shuffle([...vocabulary[currentCategory]]);
+            const allWords = shuffle([...(vocabulary[currentCategory] || [])]);
             quizWords = allWords.slice(0, quizQuantity);
             quizScore = 0;
             document.getElementById('quiz-score').textContent = `⭐ 0 / ${quizQuantity}`;
@@ -1868,7 +2642,7 @@
         // Update quantity from slider
         function updateQuantity(value) {
             quizQuantity = parseInt(value);
-            const availableWords = vocabulary[currentCategory].length;
+            const availableWords = (vocabulary[currentCategory] || []).length;
             document.getElementById('quantity-display').textContent = `${quizQuantity} 題 / 共 ${availableWords} 題`;
         }
 
@@ -1879,27 +2653,24 @@
             quizQuantity = 10;
             document.getElementById('quantity-slider').value = 10;
 
-            const allWords = shuffle([...vocabulary[currentCategory]]);
+            const allWords = shuffle([...(vocabulary[currentCategory] || [])]);
             quizWords = allWords.slice(0, quizQuantity);
             quizScore = 0;
             document.getElementById('quiz-score').textContent = `⭐ 0 / ${quizQuantity}`;
-            // Re-render quiz category tabs via DOM API (C2 XSS fix)
-            const quizTabs = document.getElementById('quiz-tabs');
-            quizTabs.innerHTML = '';
-            getCategories().forEach(c => {
-                const btn = document.createElement('button');
-                btn.className = 'category-tab' + (c === currentCategory ? ' active' : '');
-                btn.dataset.category = c;
-                btn.textContent = c;
-                btn.addEventListener('click', () => switchQuizCategory(c));
-                quizTabs.appendChild(btn);
+            // Re-render quiz category tabs (共用三行式分類選擇器)
+            renderCategoryTabs('quiz-tabs', {
+                stateKey: 'word',
+                gameLabel: '估估吓',
+                availableCategories: getCategories,
+                getSelected: () => currentCategory,
+                onSelect: (cat) => switchQuizCategory(cat),
+                onUnavailable: handleUnavailableCategory
             });
-            scrollActiveTabIntoView(quizTabs);
 
             // Update slider visibility and values
             const isLearningCat = isLearningCategory(currentCategory);
             document.getElementById('quantity-control').style.display = isLearningCat ? 'block' : 'none';
-            const availableWords = vocabulary[currentCategory].length;
+            const availableWords = (vocabulary[currentCategory] || []).length;
             document.getElementById('quantity-slider').max = Math.min(100, availableWords);
             document.getElementById('quantity-display').textContent = `${quizQuantity} 題 / 共 ${availableWords} 題`;
 
@@ -1917,7 +2688,7 @@
 
             const correct = quizWords.pop();
             let options = [correct];
-            const others = vocabulary[currentCategory].filter(w => w !== correct);
+            const others = (vocabulary[currentCategory] || []).filter(w => w !== correct);
             while (options.length < 4 && others.length > 0) {
                 const idx = Math.floor(Math.random() * others.length);
                 if (!options.includes(others[idx])) options.push(others[idx]);
@@ -1969,23 +2740,17 @@
             // naturally clears the previous score without us needing a manual reset.
             matchStates[currentCategory] = { score: 0 };
 
-            // Render match category tabs via DOM API to prevent XSS via category names
-            const matchTabs = document.getElementById('match-tabs');
-            matchTabs.innerHTML = '';
-            getCategories().forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = 'category-tab' + (cat === currentCategory ? ' active' : '');
-                btn.dataset.category = cat;
-                btn.textContent = cat;
-                btn.addEventListener('click', () => {
-                    currentCategory = cat;
-                    initMatching();
-                });
-                matchTabs.appendChild(btn);
+            // Render match category tabs (共用三行式分類選擇器)
+            renderCategoryTabs('match-tabs', {
+                stateKey: 'word',
+                gameLabel: '配對',
+                availableCategories: getCategories,
+                getSelected: () => currentCategory,
+                onSelect: (cat) => { currentCategory = cat; initMatching(); },
+                onUnavailable: handleUnavailableCategory
             });
-            scrollActiveTabIntoView(matchTabs);
 
-            const words = shuffle([...vocabulary[currentCategory]]).slice(0, 4);
+            const words = shuffle([...(vocabulary[currentCategory] || [])]).slice(0, 4);
             const pairs = [];
             const isEnglish = isEnglishCategory(currentCategory);
 
@@ -2178,22 +2943,19 @@
         function getDictCategories() { return Object.keys(dictationSentences); }
 
         function initDictation() {
-            // Render dict category tabs via DOM API to prevent XSS via category names
-            const dictTabs = document.getElementById('dict-tabs');
-            dictTabs.innerHTML = '';
-            getDictCategories().forEach(cat => {
-                const btn = document.createElement('button');
-                btn.className = 'category-tab' + (cat === dictCategory ? ' active' : '');
-                btn.dataset.category = cat;
-                btn.textContent = cat;
-                btn.addEventListener('click', () => switchDictCategory(cat));
-                dictTabs.appendChild(btn);
+            // Render dict category tabs (共用三行式分類選擇器)
+            renderCategoryTabs('dict-tabs', {
+                stateKey: 'dictation',
+                gameLabel: '句子讀默',
+                availableCategories: getDictCategories,
+                getSelected: () => dictCategory,
+                onSelect: (cat) => switchDictCategory(cat),
+                onUnavailable: handleUnavailableCategory
             });
-            scrollActiveTabIntoView(dictTabs);
 
             // Show quantity control
             document.getElementById('dict-quantity-control').style.display = 'block';
-            const availableSents = dictationSentences[dictCategory].length;
+            const availableSents = (dictationSentences[dictCategory] || []).length;
             document.getElementById('dict-quantity-slider').max = Math.min(20, availableSents);
             if (dictQuantity > availableSents) dictQuantity = availableSents;
             document.getElementById('dict-quantity-slider').value = dictQuantity;
@@ -2204,7 +2966,7 @@
             document.getElementById('dict-review-btn').style.display = 'none';
             document.getElementById('dict-review-btn').innerHTML = '';
 
-            const allSents = shuffle([...dictationSentences[dictCategory]]);
+            const allSents = shuffle([...(dictationSentences[dictCategory] || [])]);
             dictSentenceList = allSents.slice(0, dictQuantity);
             dictCurrent = 0;
             dictCorrect = 0;
@@ -2228,18 +2990,18 @@
 
         function updateDictQuantity(value) {
             dictQuantity = parseInt(value);
-            const availableSents = dictationSentences[dictCategory].length;
+            const availableSents = (dictationSentences[dictCategory] || []).length;
             document.getElementById('dict-quantity-display').textContent = `${dictQuantity} 題 / 共 ${availableSents} 題`;
         }
 
         function switchDictCategory(cat) {
             dictCategory = cat;
-            dictQuantity = Math.min(5, dictationSentences[cat].length);
+            dictQuantity = Math.min(5, (dictationSentences[cat] || []).length);
             initDictation();
         }
 
         function startDictation() {
-            const allSents = shuffle([...dictationSentences[dictCategory]]);
+            const allSents = shuffle([...(dictationSentences[dictCategory] || [])]);
             dictSentenceList = allSents.slice(0, dictQuantity);
             dictCurrent = 0;
             dictCorrect = 0;
@@ -2283,7 +3045,7 @@
             setTimeout(() => playDictSentence(), 500);
 
             // Generate options (correct + 3 wrong)
-            const allSents = dictationSentences[dictCategory];
+            const allSents = dictationSentences[dictCategory] || [];
             const wrongOptions = allSents.filter(s => s.sentence !== item.sentence);
             const shuffledWrong = shuffle(wrongOptions).slice(0, 3);
             let options = [item, ...shuffledWrong];
@@ -2449,6 +3211,8 @@
             <button onclick="closeCompletionModal()" style="padding:12px 24px;font-size:1.1em;background:#4ECDC4;color:white;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">再玩一次</button>
         </div>
     </div>
+    <!-- 輕提示（toast）：用於分類提示、截圖輸出結果回饋 -->
+    <div id="kv-toast" class="kv-toast" role="status" aria-live="polite"></div>
 </body>
 </html>
 

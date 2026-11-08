@@ -1,0 +1,34 @@
+# Changelog
+
+本檔案記錄 kids-vocab 的版本變更。
+版本格式：`v.YYYY-MM-DD-NNN`（同一日內遞增流水號；跨日則重設為 001）。
+
+## v.2026-11-08-001
+
+### 新增
+
+- **兩層分類選擇器（學段 → 語言 → 分類）**
+  - 新增 `CATEGORY_TREE` 作為分類結構的單一真相來源，將 11 個內建分類對應至 `K2` / `K3` 學段與 `中文` / `英文` 語言。
+  - 新增 helper：`getCategoryTree()`、`getCategoriesFor(gradeKey, langKey)`、`resolveCategoryLocation(cat)`。
+  - 新增共用頁籤繪製函式 `renderCategoryTabs(containerId, options)`，取代四個遊戲原本各自重複的頁籤程式碼。
+  - 四個遊戲（認字卡、估估吓、配對、句子讀默）統一改為三行式頁籤：第一行學段、第二行語言、第三行分類 chip。
+  - 未列入 `CATEGORY_TREE` 的分類（使用者自訂字詞）歸入「⭐ 其他」學段，其語言依分類名稱自動判斷。
+  - 切換學段／語言後，若原本選中的分類不在新組合內，會自動改選第一個可用分類；重新進入遊戲時保留上一次選擇。
+- **認字卡結果截圖**
+  - 認字卡完成一輪（進度 100%、顯示「完成!」）後，完成資訊區域新增「📸 輸出結果截圖」按鈕（觸控目標 48px）。
+  - 以 `<canvas>` 2D 手繪 1080 × 1350（4:5）結果圖，2 倍像素比渲染，不引入任何外部 library。
+  - 輸出流程：系統分享（`navigator.share`）→ 直接下載 PNG → 兩者都不可用或使用者取消分享時顯示結果預覽並提示長按儲存。
+  - 新增測試介面 `window.__kidsVocab`（`renderResultCanvas()`、`lastResultPng`、`currentGrade()`、`currentLang()`、`selectedCategory()` 等）。
+- **驗證腳本**
+  - 新增 `verify-grouping.mjs`（Playwright 端到端驗證，39 項檢查，輸出截圖至 `.shots/`）。
+
+### 變更
+
+- 分類頁籤改為三行式版面；學段按鈕使用暖色底、語言按鈕使用冷色底，未選中狀態改為柔和底色以強化對比。
+- 窄屏分類 chip 維持橫向捲動，桌面闊屏則自動換行置中。
+- 詞彙與讀默資料完全未變（已與 git HEAD 版本逐字比對確認）。
+
+### 已知問題
+
+- `scripts/validate-vocab.mjs` 仍會回報 8 項既有重複字問題（K2 第二段中文「高樓」、K2 第二段英文「一／七／八／九／十／我／係」）。
+  該問題在本次改動前已經存在；因分類資料不得更動，本次未修改資料，驗證輸出與改動前完全一致。
