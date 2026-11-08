@@ -530,6 +530,50 @@
         .matching-card.matched { opacity: 0; pointer-events: none; transform: scale(.85); }
 
         /* ============================================================
+           反義配對（K3 中文相反詞）
+           ============================================================ */
+        .antonym-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 52rem; }
+        .antonym-card {
+            aspect-ratio: 1;
+            background: #FFE66D;
+            color: #2f2c3f;
+            font-size: clamp(1.3rem, 1rem + .9vw, 2rem);
+        }
+        .antonym-card.selected { border-color: var(--brand); background: #C7F9CC; }
+        .antonym-card.wrong { border-color: #FF6B6B; background: #FFD6D6; animation: kv-shake .38s ease; }
+        .antonym-hint { text-align: center; color: #667eea; font-size: 1.05em; margin: .4rem 0 .2rem; }
+        .antonym-remaining { text-align: center; color: #667eea; font-size: .95em; margin: 0 0 .8rem; }
+        @keyframes kv-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+
+        /* ============================================================
+           音效開關
+           ============================================================ */
+        .sound-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            min-height: 40px;
+            padding: .4rem .95rem;
+            border: none;
+            border-radius: 999px;
+            background: #667eea;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: var(--sh-1);
+        }
+        .sound-toggle.off { background: #9aa0b5; }
+        .sound-toggle:active { transform: translateY(1px); }
+
+        /* ============================================================
            加字詞表單
            ============================================================ */
         .add-word-form { display: flex; flex-direction: column; gap: clamp(.65rem, 1.1vw, .9rem); max-width: 26rem; margin: 0 auto; }
@@ -775,6 +819,9 @@
 <body>
     <div class="container">
         <h1>🎮 孖寶學字詞</h1>
+        <div style="text-align: center; margin: -.3rem 0 .6rem;">
+            <button class="sound-toggle" id="sound-toggle" type="button" onclick="toggleSound()" aria-pressed="true">🔊 音效開</button>
+        </div>
 
         <div class="menu">
             <button class="menu-btn btn-flashcards" onclick="showGame('flashcards')">🃏 認字卡</button>
@@ -851,7 +898,7 @@
 
         <!-- Matching -->
         <div id="matching" class="game-area">
-            <h2 style="text-align: center; color: #FFE66D;">🔗 圖文配對</h2>
+            <h2 id="match-title" style="text-align: center; color: #FFE66D;">🔗 圖文配對</h2>
             <div class="category-tabs" id="match-tabs" role="group" aria-label="配對分類"></div>
             <div class="score" id="match-score" aria-live="polite">⭐ 0</div>
             <div class="matching-grid" id="match-grid"></div>
@@ -1942,6 +1989,12 @@
 
         // Flashcards
         function initFlashcards() {
+            // 相反詞分類已改為「反義配對」玩法，進入時自動轉到配對遊戲
+            if (currentCategory === ANTONYM_CATEGORY) {
+                showToast('相反詞改用配對學：揀兩個相反嘅字，啱就會消失', 3600);
+                showGame('matching');
+                return;
+            }
             renderCategoryTabs('fc-tabs', {
                 stateKey: 'word',
                 gameLabel: '認字卡',
@@ -2040,6 +2093,12 @@
             fcQuantity = 10; // Reset to default
             fcStarted = false;
             document.getElementById('fc-quantity-slider').value = 10;
+            // 相反詞分類已改為「反義配對」玩法，直接轉到配對遊戲
+            if (cat === ANTONYM_CATEGORY) {
+                showToast('相反詞改用配對學：揀兩個相反嘅字，啱就會消失', 3600);
+                showGame('matching');
+                return;
+            }
             initFlashcards();
         }
 
@@ -2184,6 +2243,7 @@
 
         function markCorrect() {
             if (!fcStarted || currentCard >= flashcardWords.length) return;
+            playSound('correct');
             fcCorrect++;
             document.getElementById('fc-score').textContent = `✅ ${fcCorrect} | ❌ ${fcWrong}`;
             goToNextCard();
@@ -2191,6 +2251,7 @@
 
         function markWrong() {
             if (!fcStarted || currentCard >= flashcardWords.length) return;
+            playSound('wrong');
             fcWrong++;
             fcWrongList.push(flashcardWords[currentCard]);
             document.getElementById('fc-score').textContent = `✅ ${fcCorrect} | ❌ ${fcWrong}`;
@@ -2595,6 +2656,196 @@
         }
 
         // ============================================================
+        // 音效（Web Audio API，冇外部音檔 / 冇 library，离線可用）
+        // ============================================================
+        const SOUND_ENABLED_KEY = 'kidsVocab_soundEnabled';
+        let soundEnabled = (function () {
+            try {
+                const stored = localStorage.getItem(SOUND_ENABLED_KEY);
+                return stored === null ? true : stored === 'true';
+            } catch (e) { return true; }
+        })();
+        let audioCtx = null;
+        let lastSound = null;
+        let soundLog = [];
+
+        function getAudioContext() {
+            try {
+                if (!audioCtx) {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (!AC) return null;
+                    audioCtx = new AC();
+                }
+                if (audioCtx.state === 'suspended' && audioCtx.resume) {
+                    audioCtx.resume().catch(() => {});
+                }
+                return audioCtx;
+            } catch (e) { return null; }
+        }
+
+        function playTone(ctx, freq, startAt, duration, type, peakGain) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, startAt);
+            gain.gain.setValueAtTime(0.0001, startAt);
+            gain.gain.exponentialRampToValueAtTime(peakGain, startAt + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(startAt);
+            osc.stop(startAt + duration + 0.03);
+        }
+
+        // kind: 'correct' | 'wrong'
+        function playSound(kind) {
+            lastSound = kind;
+            soundLog.push(kind);
+            if (!soundEnabled) return;
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            try {
+                const t0 = ctx.currentTime + 0.02;
+                if (kind === 'wrong') {
+                    // 柔和下行兩音（唔會刺耳）
+                    playTone(ctx, 233.08, t0, 0.12, 'triangle', 0.14);
+                    playTone(ctx, 174.61, t0 + 0.11, 0.16, 'triangle', 0.14);
+                } else {
+                    // 上行三音：答對
+                    playTone(ctx, 523.25, t0, 0.09, 'sine', 0.16);
+                    playTone(ctx, 659.25, t0 + 0.09, 0.09, 'sine', 0.16);
+                    playTone(ctx, 783.99, t0 + 0.18, 0.15, 'sine', 0.16);
+                }
+            } catch (e) { /* 音效失敗絕對唔可以影響遊戲流程 */ }
+        }
+
+        function setSoundEnabled(on) {
+            soundEnabled = !!on;
+            try { localStorage.setItem(SOUND_ENABLED_KEY, soundEnabled ? 'true' : 'false'); } catch (e) {}
+            updateSoundToggleUI();
+        }
+
+        function toggleSound() { setSoundEnabled(!soundEnabled); }
+
+        function updateSoundToggleUI() {
+            const btn = document.getElementById('sound-toggle');
+            if (!btn) return;
+            btn.textContent = soundEnabled ? '🔊 音效開' : '🔇 音效關';
+            btn.classList.toggle('off', !soundEnabled);
+            btn.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
+        }
+
+        // ============================================================
+        // 反義配對（K3 中文相反詞）
+        // 玩法：揀兩個字，啱就消去；錯就震一震。
+        // 詞庫資料不變，相反詞關係由「相鄰兩個為一對」推導。
+        // ============================================================
+        const ANTONYM_CATEGORY = '📚 K3第一段中文相反詞';
+        let selectedAntonym = null;
+
+        function getAntonymPairs(cat) {
+            const list = vocabulary[cat] || [];
+            const pairs = [];
+            for (let i = 0; i + 1 < list.length; i += 2) {
+                pairs.push([list[i].chinese, list[i + 1].chinese]);
+            }
+            return pairs;
+        }
+
+        function initAntonymMatch() {
+            const pairs = getAntonymPairs(ANTONYM_CATEGORY);
+            selectedAntonym = null;
+            const state = getMatchState();
+            state.score = 0;
+
+            const grid = document.getElementById('match-grid');
+            const area = document.getElementById('matching');
+            const title = document.getElementById('match-title');
+            if (title) title.textContent = '反義配對';
+
+            let hint = document.getElementById('antonym-hint');
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = 'antonym-hint';
+                hint.className = 'antonym-hint';
+                area.insertBefore(hint, grid);
+            }
+            hint.style.display = 'block';
+            hint.textContent = '揀兩個相反嘅字，啱就會消失';
+
+            let rem = document.getElementById('antonym-remaining');
+            if (!rem) {
+                rem = document.createElement('div');
+                rem.id = 'antonym-remaining';
+                rem.className = 'antonym-remaining';
+                area.insertBefore(rem, grid);
+            }
+            rem.style.display = 'block';
+            rem.textContent = `剩餘 ${pairs.length} 組`;
+
+            const cards = [];
+            pairs.forEach((pair, idx) => {
+                cards.push({ word: pair[0], pairId: 'p' + idx });
+                cards.push({ word: pair[1], pairId: 'p' + idx });
+            });
+
+            grid.classList.add('antonym-grid');
+            grid.innerHTML = shuffle(cards).map(c =>
+                `<div class="matching-card antonym-card" role="button" tabindex="0" data-word="${escapeHtml(c.word)}" data-pair="${c.pairId}" onclick="selectAntonym(this)">${escapeHtml(c.word)}</div>`
+            ).join('');
+
+            document.getElementById('match-score').textContent = '⭐ 0';
+        }
+
+        function selectAntonym(card) {
+            if (!card || card.classList.contains('matched')) return;
+            if (!selectedAntonym) {
+                selectedAntonym = card;
+                card.classList.add('selected');
+                return;
+            }
+            if (selectedAntonym === card) {
+                card.classList.remove('selected');
+                selectedAntonym = null;
+                return;
+            }
+            const first = selectedAntonym;
+            if (first.dataset.pair === card.dataset.pair) {
+                // 配對成功：兩張卡消去
+                first.classList.remove('selected');
+                card.classList.remove('selected');
+                first.classList.add('matched');
+                card.classList.add('matched');
+                selectedAntonym = null;
+                playSound('correct');
+                const state = getMatchState();
+                state.score++;
+                document.getElementById('match-score').textContent = '⭐ ' + state.score;
+                const left = document.querySelectorAll('#match-grid .antonym-card:not(.matched)').length;
+                const rem = document.getElementById('antonym-remaining');
+                if (rem) rem.textContent = `剩餘 ${left / 2} 組`;
+                try { speakMatchText(`${first.dataset.word} ${card.dataset.word}`, 'zh-HK'); } catch (e) {}
+                if (state.score >= getAntonymPairs(ANTONYM_CATEGORY).length) {
+                    setTimeout(() => showCompletionModal(), 600);
+                }
+            } else {
+                // 配錯：震一震、變紅，唔會消失
+                playSound('wrong');
+                first.classList.add('wrong');
+                card.classList.add('wrong');
+                const a = first;
+                const b = card;
+                setTimeout(() => {
+                    a.classList.remove('wrong', 'selected');
+                    b.classList.remove('wrong', 'selected');
+                }, 420);
+                selectedAntonym = null;
+            }
+        }
+
+        updateSoundToggleUI();
+
+        // ============================================================
         // 測試介面（供 Playwright 驗證使用）
         // ============================================================
         window.__kidsVocab = {
@@ -2615,7 +2866,16 @@
             vocabulary: vocabulary,
             categoryTree: () => getCategoryTree(),
             getCategoriesFor: (grade, lang) => getCategoriesFor(grade, lang),
-            resolveCategoryLocation: (cat) => resolveCategoryLocation(cat)
+            resolveCategoryLocation: (cat) => resolveCategoryLocation(cat),
+            // 音效測試介面
+            playSound: (kind) => playSound(kind),
+            get soundEnabled() { return soundEnabled; },
+            setSoundEnabled: (on) => setSoundEnabled(on),
+            get lastSound() { return lastSound; },
+            soundLog: () => soundLog.slice(),
+            // 反義配對測試介面
+            antonymCategory: ANTONYM_CATEGORY,
+            antonymPairs: () => getAntonymPairs(ANTONYM_CATEGORY).map(p => p.slice())
         };
 
         // Quiz
@@ -2732,6 +2992,7 @@
         function checkAnswer(btn, ans, correct) {
             if (ans === correct) {
                 btn.classList.add('correct');
+                playSound('correct');
                 quizScore++;
                 const total = quizQuantity;
                 const current = quizScore;
@@ -2741,6 +3002,7 @@
                 setTimeout(renderQuiz, 1200);
             } else {
                 btn.classList.add('wrong');
+                playSound('wrong');
                 const wrongMsg = ['加油呀!💪', '再試吓!😊', '唔緊要!🤗'];
                 document.getElementById('quiz-encourage').textContent = wrongMsg[Math.floor(Math.random() * wrongMsg.length)];
             }
@@ -2762,6 +3024,21 @@
                 onSelect: (cat) => { currentCategory = cat; initMatching(); },
                 onUnavailable: handleUnavailableCategory
             });
+
+            // 反義配對模式：K3 中文相反詞改為「揀兩個相反嘅字」玩法
+            if (currentCategory === ANTONYM_CATEGORY) {
+                initAntonymMatch();
+                return;
+            }
+
+            // 一般的圖文配對：隱藏反義配對專用提示
+            const antHint = document.getElementById('antonym-hint');
+            const antRem = document.getElementById('antonym-remaining');
+            if (antHint) antHint.style.display = 'none';
+            if (antRem) antRem.style.display = 'none';
+            const matchTitle = document.getElementById('match-title');
+            if (matchTitle) matchTitle.textContent = '🔗 圖文配對';
+            document.getElementById('match-grid').classList.remove('antonym-grid');
 
             const words = shuffle([...(vocabulary[currentCategory] || [])]).slice(0, 4);
             const pairs = [];
@@ -2824,6 +3101,7 @@
                 } else if (selectedMatch.dataset.mid === card.dataset.id) {
                     card.classList.add('matched');
                     selectedMatch.classList.add('matched');
+                    playSound('correct');
                     const state = getMatchState();
                     state.score++;
                     document.getElementById('match-score').textContent = '⭐ ' + state.score;
@@ -2833,6 +3111,7 @@
                         setTimeout(() => { showCompletionModal(); }, 500);
                     }
                 } else {
+                    playSound('wrong');
                     selectedMatch.classList.remove('selected');
                     selectedMatch = card;
                     card.classList.add('selected');
