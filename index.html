@@ -110,6 +110,8 @@
         .btn-matching { background: var(--yellow); color: #333; }
         .btn-add { background: var(--mint-soft); color: #333; }
         .btn-dictation { background: var(--gold); color: #333; }
+        /* Oral 口語：紫色漸層（與其他扁平色按鈕區分） */
+        .btn-oral { background: linear-gradient(135deg, #9B5DE5, #6A4BB8); color: #fff; }
 
         /* ============================================================
            遊戲區塊
@@ -499,6 +501,79 @@
         .options > div { grid-column: 1 / -1; }
 
         /* ============================================================
+           Oral 口語（K3 英文）
+           ============================================================ */
+        /* 分部切換器（D 段高頻生字 / E 段口語對話） */
+        .oral-seg {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: .55rem;
+            margin: 0 0 1.1rem;
+            padding: .6rem .5rem .7rem;
+            background: var(--surface);
+            background: color-mix(in srgb, var(--surface) 88%, transparent);
+            border: 1px solid var(--line);
+            border-radius: var(--r-md);
+            box-shadow: var(--sh-1);
+        }
+        /* 題目卡：句子（空格用底色標示） */
+        .oral-question {
+            font-size: clamp(1.15rem, 1rem + .6vw, 1.6rem);
+            color: var(--ink);
+            background: var(--surface-2);
+            padding: clamp(1rem, 2vw, 1.6rem);
+            border-radius: var(--r-md);
+            margin: .9rem 0;
+            min-height: 3.4em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.75;
+            overflow-wrap: anywhere;
+        }
+        .oral-blank {
+            background: var(--yellow);
+            padding: .05em .45em;
+            border-radius: .35em;
+            font-weight: 800;
+            letter-spacing: .02em;
+        }
+        .oral-hint {
+            font-size: 1em;
+            color: var(--ink-soft);
+            text-align: center;
+            margin-bottom: 15px;
+            min-height: 1.4em;
+        }
+        /* 答錯時短暫震動 */
+        @keyframes oralShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+        .option-btn.shake { animation: oralShake .4s ease; }
+        /* 其他選字按鈕淡化（答對／答錯後） */
+        .option-btn.faded { opacity: .3; }
+        /* 完成畫面的錯題清單 */
+        .oral-review-item {
+            background: var(--surface);
+            border-radius: var(--r-sm);
+            padding: .8rem 1rem;
+            margin-bottom: .7rem;
+            box-shadow: var(--sh-1);
+            text-align: left;
+            line-height: 1.65;
+            overflow-wrap: anywhere;
+        }
+        .oral-review-item .oral-review-q { font-weight: 800; color: var(--ink); }
+        .oral-review-item .oral-review-row { font-size: .92em; color: var(--ink-soft); }
+
+        /* ============================================================
            配對遊戲
            ============================================================ */
         .matching-grid {
@@ -829,6 +904,7 @@
             <button class="menu-btn btn-matching" onclick="showGame('matching')">🔗 配對</button>
             <button class="menu-btn btn-add" onclick="showGame('add')">➕ 加字詞</button>
             <button class="menu-btn btn-dictation" onclick="showGame('dictation')">📝 句子讀默</button>
+            <button class="menu-btn btn-oral" onclick="showGame('oral')">🗣️ Oral 口語</button>
         </div>
 
         <!-- Flashcards -->
@@ -929,6 +1005,47 @@
             <div style="text-align: center; margin-top: 20px;">
                 <div id="dict-review-btn" style="display: none; margin-top: 15px;"></div>
             </div>
+        </div>
+
+        <!-- Oral 口語（K3 英文） -->
+        <div id="oral" class="game-area">
+            <h2 style="text-align: center; color: #8B5CF6;">🗣️ Oral 口語（K3 英文）</h2>
+            <div class="oral-seg" id="oral-seg" role="group" aria-label="口語題目分部"></div>
+            <div id="oral-quantity-control" class="quantity-control">
+                <div class="quantity-label">
+                    <span>📊 題目數量</span>
+                    <span id="oral-quantity-display">10 題 / 共 30 題</span>
+                </div>
+                <input type="range" id="oral-quantity-slider" class="quantity-slider" min="1" max="30" value="10" onchange="updateOralQuantity(this.value)">
+            </div>
+
+            <!-- 未開始：預覽 + 開始按鈕 -->
+            <div id="oral-start-wrap" style="text-align: center; margin: 15px 0;">
+                <div id="oral-preview" style="font-size: 1.1em; color: #667eea; margin-bottom: 15px; line-height: 1.7;"></div>
+                <button class="back-btn" id="oral-start-btn" onclick="startOral()" style="background: linear-gradient(135deg, #9B5DE5, #6A4BB8); font-size: 1.3em; padding: 15px 40px;">▶️ 開始</button>
+            </div>
+
+            <!-- 進行中 -->
+            <div class="progress-bar"><div class="progress-fill" id="oral-progress" style="width: 0%">0/0</div></div>
+            <div id="oral-play" style="display: none;">
+                <div style="text-align: center; margin: 20px 0;">
+                    <div id="oral-score" aria-live="polite" style="font-size: 1.3em; color: #667eea; margin-bottom: 15px;">✅ 0 | ❌ 0</div>
+                    <div id="oral-question" class="oral-question"></div>
+                    <div id="oral-hint" class="oral-hint"></div>
+                    <div style="margin: 15px 0;">
+                        <button class="back-btn" id="oral-listen-btn" onclick="speakOralQuestion()" style="background: #667eea;">🔊 聽問題</button>
+                        <button class="back-btn" id="oral-hint-btn" onclick="speakOralHint()" style="background: #F7DC6F; color: #333;">💡 中文提示</button>
+                    </div>
+                    <div id="oral-bank" class="options" style="margin-top: 20px;"></div>
+                    <div class="encourage" id="oral-encourage" aria-live="polite" style="margin-top: 15px;"></div>
+                    <div id="oral-next-wrap" style="display: none; margin-top: 15px;">
+                        <button class="back-btn" id="oral-next" onclick="nextOralQuestion()" style="background: #4ECDC4;">下一題 ➡️</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 完成畫面 -->
+            <div id="oral-finish" style="display: none;"></div>
         </div>
 
         <!-- Add Word -->
@@ -1635,6 +1752,7 @@
             if (game === 'quiz') initQuiz();
             if (game === 'matching') initMatching();
             if (game === 'dictation') initDictation();
+            if (game === 'oral') initOral();
         }
 
         // Escape HTML special characters to prevent XSS via user-controlled strings.
@@ -2191,7 +2309,8 @@
                 utterance.pitch = isEnglishUtterance ? 1.0 : 1.05; // Slightly higher pitch for friendliness
 
                 // For Chinese, prioritize Cantonese (粵語) over Mandarin
-                if (lang === 'zh-HK' || lang === 'zh-CN') {
+                // 2026-11-09：接受 'zh' / 'zh-HK' / 'zh-CN' 等以 'zh' 開頭的語言標記
+                if (typeof lang === 'string' && lang.toLowerCase().startsWith('zh')) {
                     // M6: extract the priority chain into a helper so the same
                     // logic is easy to test and reuse. Returns null if no Chinese
                     // voice exists, in which case the utterance falls back to the
@@ -3476,6 +3595,392 @@
             document.getElementById('dict-review-btn').style.display = 'none';
             document.getElementById('dict-review-btn').innerHTML = '';
             renderDictSentence();
+        }
+
+        // ============================================================
+        // Oral 口語（K3 英文）
+        // ------------------------------------------------------------
+        // 玩法：句子填空（選字題）—— 讀出句子，揀一個字填入空格。
+        // 題庫分兩個分部：
+        //   D. 高頻生字：教材 D 段「認讀及運用高頻生字」的 26 個高頻字
+        //   E. 口語對話：教材 E 段「Oral 會話」的 7 個題型（共 26 題）
+        //
+        // 每題格式：
+        //   q    = 題目句子（必須有且只有一個空格 _____）
+        //   a    = 正確答案（單一英文字）
+        //   zh   = 中文提示（繁體書面中文）
+        //   full = 完整句子（TTS 讀出用）
+        //   pool = 干擾字來源（key，見 ORAL_DISTRACTOR_POOLS）
+        // ============================================================
+        const ORAL_SIGHT_WORDS = ['I', 'he', 'she', 'am', 'is', 'the', 'of', 'and', 'are', 'we', 'they', 'you', 'a', 'to', 'in', 'it', 'yes', 'no', 'my', 'your', 'an', 'what', 'how', 'his', 'her', 'their'];
+
+        const ORAL_DISTRACTOR_POOLS = {
+            sight: ORAL_SIGHT_WORDS,
+            name: ['Sam', 'Anna', 'Tom', 'Emily', 'Peter', 'Lucy'],
+            feel: ['happy', 'sad', 'frightened', 'brave', 'nice', 'scary'],
+            animal: ['cat', 'dog', 'bird', 'fish', 'rabbit', 'duck', 'pig', 'cow', 'mouse', 'horse'],
+            animalPlural: ['cats', 'dogs', 'birds', 'fish', 'rabbits', 'ducks', 'pigs', 'cows', 'horses', 'mice'],
+            fruit: ['apple', 'orange', 'banana', 'pear', 'peach', 'lemon'],
+            colour: ['red', 'blue', 'green', 'pink', 'yellow', 'grey', 'purple', 'orange']
+        };
+
+        const ORAL_SEGMENT_LABELS = {
+            'D. 高頻生字': 'D. 高頻生字（Sight Words）',
+            'E. 口語對話': 'E. 口語對話（Oral）'
+        };
+
+        const oralQuestions = {
+            'D. 高頻生字': [
+                { q: '_____ am a boy.', a: 'I', zh: '我是男孩。', full: 'I am a boy.', pool: 'sight' },
+                { q: 'I _____ five years old.', a: 'am', zh: '我五歲了。', full: 'I am five years old.', pool: 'sight' },
+                { q: 'He _____ my friend.', a: 'is', zh: '他是我的朋友。', full: 'He is my friend.', pool: 'sight' },
+                { q: '_____ is my sister.', a: 'she', zh: '她是我的姐姐。', full: 'She is my sister.', pool: 'sight' },
+                { q: '_____ is my dad.', a: 'he', zh: '他是我的爸爸。', full: 'He is my dad.', pool: 'sight' },
+                { q: 'This is _____ big cat.', a: 'the', zh: '這是一隻大貓。', full: 'This is the big cat.', pool: 'sight' },
+                { q: 'This is a picture _____ my family.', a: 'of', zh: '這是我家人的相片。', full: 'This is a picture of my family.', pool: 'sight' },
+                { q: 'I like cats _____ dogs.', a: 'and', zh: '我喜歡貓和狗。', full: 'I like cats and dogs.', pool: 'sight' },
+                { q: 'We _____ very happy.', a: 'are', zh: '我們很開心。', full: 'We are very happy.', pool: 'sight' },
+                { q: '_____ go to school together.', a: 'we', zh: '我們一起上學。', full: 'We go to school together.', pool: 'sight' },
+                { q: '_____ like ice cream.', a: 'they', zh: '他們喜歡雪糕。', full: 'They like ice cream.', pool: 'sight' },
+                { q: 'I have a pen and _____ have a ruler.', a: 'you', zh: '我有筆，你有尺。', full: 'I have a pen and you have a ruler.', pool: 'sight' },
+                { q: 'It is _____ dog.', a: 'a', zh: '它是一隻狗。', full: 'It is a dog.', pool: 'sight' },
+                { q: 'It is _____ apple.', a: 'an', zh: '它是一個蘋果。', full: 'It is an apple.', pool: 'sight' },
+                { q: 'We go _____ the park.', a: 'to', zh: '我們去公園。', full: 'We go to the park.', pool: 'sight' },
+                { q: 'The cat is _____ the box.', a: 'in', zh: '貓在箱子裡面。', full: 'The cat is in the box.', pool: 'sight' },
+                { q: '_____ is a small bird.', a: 'it', zh: '它是一隻小鳥。', full: 'It is a small bird.', pool: 'sight' },
+                { q: '_____, I can do it!', a: 'yes', zh: '是的，我可以做到！', full: 'Yes, I can do it!', pool: 'sight' },
+                { q: '_____, I do not like it.', a: 'no', zh: '不，我不喜歡它。', full: 'No, I do not like it.', pool: 'sight' },
+                { q: 'This is _____ cat.', a: 'my', zh: '這是我的貓。', full: 'This is my cat.', pool: 'sight' },
+                { q: 'What is _____ name?', a: 'your', zh: '你的名字是什麼？', full: 'What is your name?', pool: 'sight' },
+                { q: '_____ is this? A cat or a dog?', a: 'what', zh: '這是什麼？貓還是狗？', full: 'What is this? A cat or a dog?', pool: 'sight' },
+                { q: '_____ are you today?', a: 'how', zh: '你今天好嗎？', full: 'How are you today?', pool: 'sight' },
+                { q: 'This is _____ book.', a: 'his', zh: '這是他的書。', full: 'This is his book.', pool: 'sight' },
+                { q: 'That is _____ bag.', a: 'her', zh: '那是她的袋子。', full: 'That is her bag.', pool: 'sight' },
+                { q: '_____ bags are blue.', a: 'their', zh: '他們的書包是藍色的。', full: 'Their bags are blue.', pool: 'sight' },
+                { q: 'He is _____ teacher.', a: 'my', zh: '他是我的老師。', full: 'He is my teacher.', pool: 'sight' },
+                { q: 'She has _____ new book.', a: 'a', zh: '她有一本新書。', full: 'She has a new book.', pool: 'sight' },
+                { q: 'We _____ in the classroom.', a: 'are', zh: '我們在教室裡面。', full: 'We are in the classroom.', pool: 'sight' },
+                { q: '_____ is a friend of mine.', a: 'he', zh: '他是我的朋友。', full: 'He is a friend of mine.', pool: 'sight' }
+            ],
+            'E. 口語對話': [
+                // 題型 1：What's your name? → My name is ___.
+                { q: "What's your name? My name is _____.", a: 'Sam', zh: '你叫什麼名字？我的名字是 Sam。', full: "What's your name? My name is Sam.", pool: 'name' },
+                { q: "What's your name? My name is _____.", a: 'Anna', zh: '你叫什麼名字？我的名字是 Anna。', full: "What's your name? My name is Anna.", pool: 'name' },
+                { q: "What's your name? My name is _____.", a: 'Tom', zh: '你叫什麼名字？我的名字是 Tom。', full: "What's your name? My name is Tom.", pool: 'name' },
+                // 題型 2：How do you feel? → I am ___.
+                { q: 'How do you feel? I am _____.', a: 'happy', zh: '你感覺怎樣？我很開心。', full: 'How do you feel? I am happy.', pool: 'feel' },
+                { q: 'How do you feel? I am _____.', a: 'sad', zh: '你感覺怎樣？我很傷心。', full: 'How do you feel? I am sad.', pool: 'feel' },
+                { q: 'How do you feel? I am _____.', a: 'frightened', zh: '你感覺怎樣？我很害怕。', full: 'How do you feel? I am frightened.', pool: 'feel' },
+                { q: 'How do you feel? I am _____.', a: 'brave', zh: '你感覺怎樣？我很勇敢。', full: 'How do you feel? I am brave.', pool: 'feel' },
+                // 題型 3：How does he/she feel? → He/She is ___.
+                { q: 'How does he feel? He is _____.', a: 'sad', zh: '他感覺怎樣？他很傷心。', full: 'How does he feel? He is sad.', pool: 'feel' },
+                { q: 'How does she feel? She is _____.', a: 'happy', zh: '她感覺怎樣？她很開心。', full: 'How does she feel? She is happy.', pool: 'feel' },
+                { q: 'How does she feel? She is _____.', a: 'frightened', zh: '她感覺怎樣？她很害怕。', full: 'How does she feel? She is frightened.', pool: 'feel' },
+                // 題型 4：Is it a/an ___? → Yes, it is. / No, it is not.
+                { q: 'Is it a _____? Yes, it is.', a: 'dog', zh: '它是一隻狗嗎？是的，它是。', full: 'Is it a dog? Yes, it is.', pool: 'animal' },
+                { q: 'Is it a _____? Yes, it is.', a: 'cat', zh: '它是一隻貓嗎？是的，它是。', full: 'Is it a cat? Yes, it is.', pool: 'animal' },
+                { q: 'Is it an _____? Yes, it is.', a: 'apple', zh: '它是一個蘋果嗎？是的，它是。', full: 'Is it an apple? Yes, it is.', pool: 'fruit' },
+                { q: 'Is it a _____? No, it is not. It is a cat.', a: 'dog', zh: '它是一隻狗嗎？不，它是一隻貓。', full: 'Is it a dog? No, it is not. It is a cat.', pool: 'animal' },
+                { q: 'Is it an _____? No, it is not. It is a dog.', a: 'apple', zh: '它是一個蘋果嗎？不，它是一隻狗。', full: 'Is it an apple? No, it is not. It is a dog.', pool: 'fruit' },
+                // 題型 5：Are they ___? → Yes, they are. / No, they are not.
+                { q: 'Are they _____? Yes, they are.', a: 'cats', zh: '牠們是貓嗎？是的，牠們是。', full: 'Are they cats? Yes, they are.', pool: 'animalPlural' },
+                { q: 'Are they _____? Yes, they are.', a: 'dogs', zh: '牠們是狗嗎？是的，牠們是。', full: 'Are they dogs? Yes, they are.', pool: 'animalPlural' },
+                { q: 'Are they _____? No, they are not. They are cats.', a: 'dogs', zh: '牠們是狗嗎？不，牠們是貓。', full: 'Are they dogs? No, they are not. They are cats.', pool: 'animalPlural' },
+                { q: 'Are they _____? No, they are not. They are birds.', a: 'cats', zh: '牠們是貓嗎？不，牠們是鳥。', full: 'Are they cats? No, they are not. They are birds.', pool: 'animalPlural' },
+                // 題型 6：What are they? → They are ___. How many?
+                { q: 'What are they? They are _____.', a: 'cats', zh: '牠們是什麼？牠們是貓。', full: 'What are they? They are cats.', pool: 'animalPlural' },
+                { q: 'What are they? They are _____.', a: 'dogs', zh: '牠們是什麼？牠們是狗。', full: 'What are they? They are dogs.', pool: 'animalPlural' },
+                { q: 'What are they? They are _____. How many are there? Three.', a: 'cats', zh: '牠們是什麼？牠們是貓。有多少隻？三隻。', full: 'What are they? They are cats. How many are there? Three.', pool: 'animalPlural' },
+                // 題型 7：What is it? → It is a/an ___. What colour is it? → It is ___.
+                { q: 'What is it? It is an _____.', a: 'apple', zh: '這是什麼？它是一個蘋果。', full: 'What is it? It is an apple.', pool: 'fruit' },
+                { q: 'What is it? It is a _____.', a: 'cat', zh: '這是什麼？它是一隻貓。', full: 'What is it? It is a cat.', pool: 'animal' },
+                { q: 'What colour is it? It is _____.', a: 'red', zh: '它是什麼顏色？它是紅色。', full: 'What colour is it? It is red.', pool: 'colour' },
+                { q: 'What colour is it? It is _____.', a: 'yellow', zh: '它是什麼顏色？它是黃色。', full: 'What colour is it? It is yellow.', pool: 'colour' }
+            ]
+        };
+
+        // 供自動化驗證（verify-oral.mjs）讀取題庫；不影響遊戲流程
+        window.oralQuestions = oralQuestions;
+        window.ORAL_SIGHT_WORDS = ORAL_SIGHT_WORDS;
+
+        // ---- Oral 遊戲狀態 ----
+        let oralSegment = 'D. 高頻生字';
+        let oralQuantity = 10;
+        let oralList = [];
+        let oralCurrent = 0;
+        let oralCorrect = 0;
+        let oralWrong = 0;
+        let oralWrongList = [];
+        let oralStarted = false;
+        let oralAnswered = false;
+
+        function getOralSegments() { return Object.keys(oralQuestions); }
+
+        function renderOralSegmentTabs() {
+            const wrap = document.getElementById('oral-seg');
+            if (!wrap) return;
+            wrap.innerHTML = getOralSegments().map(key => {
+                const label = ORAL_SEGMENT_LABELS[key] || key;
+                const active = key === oralSegment ? ' active' : '';
+                return `<button class="category-tab${active}" onclick="switchOralSegment('${escapeHtml(key)}')">${escapeHtml(label)}</button>`;
+            }).join('');
+        }
+
+        function switchOralSegment(key) {
+            if (!oralQuestions[key]) return;
+            oralSegment = key;
+            const total = oralQuestions[key].length;
+            oralQuantity = Math.min(Math.max(1, oralQuantity), total);
+            const slider = document.getElementById('oral-quantity-slider');
+            slider.max = String(total);
+            slider.value = String(oralQuantity);
+            updateOralQuantityDisplay();
+            renderOralSegmentTabs();
+            resetOralToPreview();
+        }
+
+        function updateOralQuantityDisplay() {
+            const total = (oralQuestions[oralSegment] || []).length;
+            const el = document.getElementById('oral-quantity-display');
+            if (el) el.textContent = `${oralQuantity} 題 / 共 ${total} 題`;
+        }
+
+        function updateOralQuantity(value) {
+            const total = (oralQuestions[oralSegment] || []).length;
+            oralQuantity = Math.min(Math.max(1, parseInt(value, 10) || 1), total);
+            updateOralQuantityDisplay();
+            // 改題數 → 回到未開始狀態（清空分數與錯題）
+            resetOralToPreview();
+        }
+
+        // 未開始狀態：顯示預覽（分部名 + 題數）
+        function resetOralToPreview() {
+            oralStarted = false;
+            oralAnswered = false;
+            oralList = [];
+            oralCurrent = 0;
+            oralCorrect = 0;
+            oralWrong = 0;
+            oralWrongList = [];
+
+            document.getElementById('oral-start-wrap').style.display = 'block';
+            document.getElementById('oral-play').style.display = 'none';
+            document.getElementById('oral-finish').style.display = 'none';
+            document.getElementById('oral-quantity-control').style.display = 'block';
+            document.getElementById('oral-progress').style.width = '0%';
+            document.getElementById('oral-progress').textContent = '0/0';
+            document.getElementById('oral-score').textContent = '✅ 0 | ❌ 0';
+            document.getElementById('oral-encourage').textContent = '';
+            document.getElementById('oral-hint').textContent = '';
+            document.getElementById('oral-bank').innerHTML = '';
+            document.getElementById('oral-question').innerHTML = '';
+            document.getElementById('oral-next-wrap').style.display = 'none';
+
+            const total = (oralQuestions[oralSegment] || []).length;
+            const label = ORAL_SEGMENT_LABELS[oralSegment] || oralSegment;
+            document.getElementById('oral-preview').innerHTML =
+                `<div style="font-size: 1.05em; font-weight: 800;">🗣️ ${escapeHtml(label)}</div>` +
+                `<div style="font-size: .95em; color: var(--ink-soft); margin-top: 6px;">共 ${total} 題（將會出 ${Math.min(oralQuantity, total)} 題）</div>`;
+        }
+
+        function initOral() {
+            renderOralSegmentTabs();
+            const total = (oralQuestions[oralSegment] || []).length;
+            const slider = document.getElementById('oral-quantity-slider');
+            slider.max = String(Math.max(1, total));
+            oralQuantity = Math.min(Math.max(1, oralQuantity), Math.max(1, total));
+            slider.value = String(oralQuantity);
+            updateOralQuantityDisplay();
+            resetOralToPreview();
+        }
+
+        function startOral() {
+            const all = oralQuestions[oralSegment] || [];
+            if (!all.length) return;
+            oralList = shuffle([...all]).slice(0, Math.min(oralQuantity, all.length));
+            oralCurrent = 0;
+            oralCorrect = 0;
+            oralWrong = 0;
+            oralWrongList = [];
+            oralStarted = true;
+            oralAnswered = false;
+            document.getElementById('oral-start-wrap').style.display = 'none';
+            document.getElementById('oral-finish').style.display = 'none';
+            document.getElementById('oral-play').style.display = 'block';
+            // 作答期間隱藏題數滑桿（避免與進度條混淆）
+            document.getElementById('oral-quantity-control').style.display = 'none';
+            renderOralQuestion();
+        }
+
+        // 建立 6 個選字按鈕（答案 + 5 個同類干擾字，位置隨機）
+        function buildOralOptions(item) {
+            const answer = (item.a || '').trim();
+            const pool = ORAL_DISTRACTOR_POOLS[item.pool] || ORAL_DISTRACTOR_POOLS.sight;
+            let distractors = pool.filter(w => (w || '').trim().toLowerCase() !== answer.toLowerCase());
+            distractors = shuffle(distractors).slice(0, 5);
+            // 萬一池子太小，用其他池的字補夠 5 個
+            const allWords = Object.values(ORAL_DISTRACTOR_POOLS).flat();
+            let guard = 0;
+            while (distractors.length < 5 && guard < 50) {
+                guard++;
+                const extra = allWords[Math.floor(Math.random() * allWords.length)];
+                if (!extra) break;
+                if (extra.toLowerCase() === answer.toLowerCase()) continue;
+                if (distractors.some(d => d.toLowerCase() === extra.toLowerCase())) continue;
+                distractors.push(extra);
+            }
+            return shuffle([answer, ...distractors]);
+        }
+
+        function renderOralQuestion() {
+            const item = oralList[oralCurrent];
+            if (!item) return;
+            const total = oralList.length || 1;
+            document.getElementById('oral-progress').style.width = ((oralCurrent + 1) / total * 100) + '%';
+            document.getElementById('oral-progress').textContent = `${oralCurrent + 1}/${total}`;
+            document.getElementById('oral-score').textContent = `✅ ${oralCorrect} | ❌ ${oralWrong}`;
+            document.getElementById('oral-question').innerHTML =
+                escapeHtml(item.q).replace(/_____/g, '<span class="oral-blank">_____</span>');
+            document.getElementById('oral-hint').textContent = '💡 ' + item.zh;
+            document.getElementById('oral-encourage').textContent = '';
+            document.getElementById('oral-next-wrap').style.display = 'none';
+            renderOralBank(item);
+        }
+
+        function renderOralBank(item) {
+            const options = buildOralOptions(item);
+            document.getElementById('oral-bank').innerHTML = options.map(w =>
+                `<button class="option-btn" data-answer="${escapeHtml(w)}" onclick="checkOralAnswer(this)">${escapeHtml(w)}</button>`
+            ).join('');
+        }
+
+        function checkOralAnswer(btn) {
+            if (!oralStarted || oralAnswered) return;
+            const item = oralList[oralCurrent];
+            if (!item || !btn) return;
+            oralAnswered = true;
+
+            const picked = (btn.dataset.answer || '').trim().toLowerCase();
+            const answer = (item.a || '').trim().toLowerCase();
+            const buttons = Array.from(document.querySelectorAll('#oral-bank .option-btn'));
+            buttons.forEach(b => { b.disabled = true; });
+
+            if (picked === answer) {
+                // 答對：該按鈕變綠並鎖定、其餘按鈕變淡
+                btn.classList.add('correct');
+                buttons.forEach(b => { if (b !== btn) b.classList.add('faded'); });
+                oralCorrect++;
+                playSound('correct');
+                document.getElementById('oral-encourage').textContent = '✅ 啱！下一題';
+                // TTS 讀出填回答案後的完整句子
+                document.getElementById('oral-question').innerHTML = `<span>${escapeHtml(item.full)}</span>`;
+                speakText(item.full, 'en');
+            } else {
+                // 答錯：按鈕變紅並短暫震動、正確答案高亮（不重複計錯）
+                btn.classList.add('wrong', 'shake');
+                oralWrong++;
+                oralWrongList.push({
+                    q: item.q, a: item.a, zh: item.zh, full: item.full,
+                    user: (btn.dataset.answer || '').trim()
+                });
+                buttons.forEach(b => {
+                    if ((b.dataset.answer || '').trim().toLowerCase() === answer) b.classList.add('correct');
+                    else b.classList.add('faded');
+                });
+                playSound('wrong');
+                document.getElementById('oral-encourage').textContent = '❌ 睇答案';
+                document.getElementById('oral-question').innerHTML = `<span>${escapeHtml(item.full)}</span>`;
+            }
+
+            document.getElementById('oral-score').textContent = `✅ ${oralCorrect} | ❌ ${oralWrong}`;
+            const nextWrap = document.getElementById('oral-next-wrap');
+            nextWrap.style.display = 'block';
+            document.getElementById('oral-next').textContent =
+                (oralCurrent + 1 >= oralList.length) ? '完成 🏁' : '下一題 ➡️';
+        }
+
+        function nextOralQuestion() {
+            if (!oralStarted || !oralAnswered) return;
+            oralCurrent++;
+            oralAnswered = false;
+            if (oralCurrent >= oralList.length) {
+                showOralFinish();
+                return;
+            }
+            renderOralQuestion();
+        }
+
+        function speakOralQuestion() {
+            const item = oralList[oralCurrent];
+            if (!item) return;
+            // 空格讀作 "blank"，避免 TTS 讀出底線符號
+            speakText(item.q.replace(/_____/g, ' blank '), 'en');
+        }
+
+        function speakOralHint() {
+            const item = oralList[oralCurrent];
+            if (!item) return;
+            document.getElementById('oral-hint').textContent = '💡 ' + item.zh;
+            speakText(item.zh, 'zh');
+        }
+
+        function showOralFinish() {
+            const total = oralList.length || 1;
+            const pct = Math.round(oralCorrect / total * 100);
+            const stars = pct >= 90 ? '⭐⭐⭐' : (pct >= 70 ? '⭐⭐' : '⭐');
+            const emoji = oralWrong === 0 ? '🎉' : '💪';
+            const msg = oralWrong === 0
+                ? '全部答啱！好厲害！'
+                : `完成！答啱 ${oralCorrect} 題，答錯 ${oralWrong} 題`;
+
+            const reviewHtml = oralWrongList.length
+                ? `<div id="oral-review" style="margin: 20px 0; padding: 15px; background: var(--surface-2); border-radius: var(--r-md); text-align: left;">
+                       <div style="font-size: 1.1em; font-weight: 800; color: var(--red); margin-bottom: 12px;">📝 錯題清單（${oralWrongList.length} 題）</div>
+                       ${oralWrongList.map((w, i) => `
+                           <div class="oral-review-item">
+                               <div class="oral-review-q">📌 第 ${i + 1} 題：${escapeHtml(w.q)}</div>
+                               <div class="oral-review-row">❌ 你的答案：${escapeHtml(w.user)}</div>
+                               <div class="oral-review-row">✅ 正確答案：${escapeHtml(w.a)}</div>
+                               <div class="oral-review-row">💡 中文提示：${escapeHtml(w.zh)}</div>
+                           </div>`).join('')}
+                   </div>`
+                : '<div id="oral-review" style="margin: 20px 0; color: var(--ink-soft);">沒有錯題，非常棒！</div>';
+
+            document.getElementById('oral-progress').style.width = '100%';
+            document.getElementById('oral-progress').textContent = '完成!';
+            document.getElementById('oral-play').style.display = 'none';
+            const finish = document.getElementById('oral-finish');
+            finish.style.display = 'block';
+            finish.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 3em; margin-bottom: 12px;">${emoji}</div>
+                    <div style="font-size: 1.5em; color: var(--brand); margin-bottom: 8px;">${escapeHtml(msg)}</div>
+                    <div style="font-size: 1.6em; font-weight: 800; margin-bottom: 6px;">${stars} ${pct}%</div>
+                    <div style="font-size: 1.1em; color: var(--ink-soft);">✅ ${oralCorrect} | ❌ ${oralWrong}（共 ${total} 題）</div>
+                    ${reviewHtml}
+                    <div style="margin-top: 25px;">
+                        <button class="back-btn" onclick="startOral()" style="background: var(--mint); color: #0b3b34; font-size: 1.2em; padding: 15px 30px;">🔁 再玩一次</button>
+                        <button class="back-btn" onclick="initOral()" style="background: var(--brand-grad); font-size: 1.2em; padding: 15px 30px;">🏠 返去選單</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 供自動化驗證（verify-oral.mjs）查閱目前狀態；不影響遊戲流程
+        function getOralDebugState() {
+            const item = oralList[oralCurrent];
+            return {
+                segment: oralSegment,
+                started: oralStarted,
+                answered: oralAnswered,
+                current: oralCurrent,
+                total: oralList.length,
+                correct: oralCorrect,
+                wrong: oralWrong,
+                answer: item ? item.a : null,
+                question: item ? item.q : null,
+                options: Array.from(document.querySelectorAll('#oral-bank .option-btn')).map(b => (b.dataset.answer || '').trim())
+            };
         }
 
         // ========== Completion Modal (M4) ==========
